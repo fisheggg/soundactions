@@ -24,9 +24,8 @@ import random
 import torch.utils.checkpoint as checkpoint
 
 ### VGGSound
-from nets import Resnet_VGGSound
+from . import Resnet_VGGSound, esc_config
 from .htsat import HTSAT_Swin_Transformer
-import nets.esc_config as esc_config
 from .utils import do_mixup, get_mix_lambda, do_mixup_label
     
 # torch.manual_seed(0)
@@ -35,7 +34,7 @@ from .utils import do_mixup, get_mix_lambda, do_mixup_label
 # torch.cuda.manual_seed_all(0)
 
 
-from nets.my_vit import my_vit
+from .my_vit import my_vit
 
 def _get_clones(module, N):
     return nn.ModuleList([copy.deepcopy(module) for i in range(N)])
@@ -737,7 +736,8 @@ class MMIL_Net(nn.Module):
 			num_heads=esc_config.htsat_num_head
 		)
         
-		checkpoint_path = os.path.join(esc_config.checkpoint_path, esc_config.checkpoint)
+		# checkpoint_path = os.path.join(esc_config.checkpoint_path, esc_config.checkpoint)
+		checkpoint_path = os.path.join("/fp/homes01/u01/ec-jinyueg/felles_/Research/Users/jinyueg/SoundActions/soundactions/checkpoints/dg-sct/backbone/AudioSet/HTSAT_AudioSet_Saved_1.ckpt")
 		tmp = torch.load(checkpoint_path, map_location='cpu')
 		tmp = {k[10:]:v for k, v in tmp['state_dict'].items()}
 		self.htsat.load_state_dict(tmp, strict=True)
