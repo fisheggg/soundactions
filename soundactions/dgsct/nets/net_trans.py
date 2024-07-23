@@ -931,7 +931,7 @@ class MMIL_Net(nn.Module):
         
 		is_event_scores, event_scores, av_score = self.CMBS(video_feature, audio_feature)
         
-		return is_event_scores, event_scores, audio_visual_gate, av_score
+		return is_event_scores, event_scores, audio_visual_gate, av_score, video_feature, audio_feature
 
 	def forward(self, audio, vis, mixup_lambda=None, rand_train_idx=12, stage='eval'):
 		return self.forward_swin(audio, vis, mixup_lambda, rand_train_idx=12, stage='eval')
