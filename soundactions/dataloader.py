@@ -1,15 +1,17 @@
 import os
 import glob
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 import torch
 import torchaudio
 import torchvision
-from tqdm import tqdm
-from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
+
+# from tqdm import tqdm
+from torchvision.transforms import Compose, Normalize, Resize
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+
 
 class SoundActionsDataset(torch.utils.data.Dataset):
     def __init__(
@@ -41,10 +43,12 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self.load_mode = load_mode
         self.sample_mode = sample_mode
 
-        self.my_normalize = Compose([
-			Resize([192,192], interpolation=Image.BICUBIC),
-			Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
-		])
+        self.my_normalize = Compose(
+            [
+                Resize([192, 192], interpolation=Image.BICUBIC),
+                Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
+            ]
+        )
 
         if size is not None:
             self.video_paths = self.video_paths[:size]
@@ -59,7 +63,8 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             print("=> Preloading SoundActions dataset...")
             for video_path, audio_path in zip(self.video_paths, self.audio_paths):
                 video, _, video_metadata = torchvision.io.read_video(
-                    video_path, pts_unit="sec"
+                    video_path,
+                    pts_unit="sec",
                 )
                 audio, audio_fps = torchaudio.load(audio_path)
                 self.videos.append(self.my_normalize(video))
@@ -67,88 +72,6 @@ class SoundActionsDataset(torch.utils.data.Dataset):
                 self.audios.append(audio)
                 self.audios_fps.append(audio_fps)
             print("=> Preloading done")
-
-    def _wav2fbank(self, filename, filename2=None, idx=None):
-        """
-        copied from https://github.com/haoyi-duan/DG-SCT/blob/211fc57f0093e2111f43f670362a41f0a4c2322b/DG-SCT/AVE/dataloader.py#L92
-        """
-        # mixup
-        if filename2 == None:
-            waveform, sr = torchaudio.load(filename)
-            waveform = waveform - waveform.mean()
-        # mixup
-        else:
-            waveform1, sr = torchaudio.load(filename)
-            waveform2, _ = torchaudio.load(filename2)
-
-            waveform1 = waveform1 - waveform1.mean()
-            waveform2 = waveform2 - waveform2.mean()
-
-            if waveform1.shape[1] != waveform2.shape[1]:
-                if waveform1.shape[1] > waveform2.shape[1]:
-                    # padding
-                    temp_wav = torch.zeros(1, waveform1.shape[1])
-                    temp_wav[0, 0 : waveform2.shape[1]] = waveform2
-                    waveform2 = temp_wav
-                else:
-                    # cutting
-                    waveform2 = waveform2[0, 0 : waveform1.shape[1]]
-
-            # sample lambda from uniform distribution
-            # mix_lambda = random.random()
-            # sample lambda from beta distribtion
-            mix_lambda = np.random.beta(10, 10)
-
-            mix_waveform = mix_lambda * waveform1 + (1 - mix_lambda) * waveform2
-            waveform = mix_waveform - mix_waveform.mean()
-
-        if waveform.shape[1] > 16000 * (self.opt.audio_length + 0.1):
-            sample_indx = np.linspace(
-                0,
-                waveform.shape[1] - 16000 * (self.opt.audio_length + 0.1),
-                num=10,
-                dtype=int,
-            )
-            waveform = waveform[
-                :,
-                sample_indx[idx] : sample_indx[idx]
-                + int(16000 * self.opt.audio_length),
-            ]
-        ## align end ##
-
-        fbank = torchaudio.compliance.kaldi.fbank(
-            waveform,
-            htk_compat=True,
-            sample_frequency=sr,
-            use_energy=False,
-            window_type="hanning",
-            num_mel_bins=192,
-            dither=0.0,
-            frame_shift=5.2,
-        )
-
-        ########### ------> very important: audio normalized
-        fbank = (fbank - self.norm_mean) / (self.norm_std * 2)
-        ### <--------
-        target_length = 192  ##
-
-        # target_length = 512 ## 5s
-        # target_length = 256 ## 2.5s
-        n_frames = fbank.shape[0]
-
-        p = target_length - n_frames
-
-        # cut and pad
-        if p > 0:
-            m = torch.nn.ZeroPad2d((0, 0, 0, p))
-            fbank = m(fbank)
-        elif p < 0:
-            fbank = fbank[0:target_length, :]
-
-        if filename2 == None:
-            return fbank, 0
-        else:
-            return fbank, mix_lambda
 
     def __len__(self):
         if self.sample_mode == "full":
@@ -161,8 +84,9 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             video_path = self.video_paths[index]
             audio_path = self.audio_paths[index]
             data["video"], _, data["video_metadata"] = torchvision.io.read_video(
-                video_path, pts_unit="sec"
+                video_path, pts_unit="sec", output_format="TCHW"
             )
+            data["video"] = data["video"].to(torch.float32) / 255.0
             data["video"] = self.my_normalize(data["video"])
             data["audio"], data["audio_fs"] = torchaudio.load(audio_path)
         elif self.load_mode == "preload":
@@ -179,12 +103,16 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    # dataset = SoundActionsDataset("train")
-    dataset = SoundActionsDataset("train", load_mode="preload", size=10)
+    dataset = SoundActionsDataset("train")
+    # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
     print(len(dataset))
     sample = dataset[0]
-    print(sample["video"].shape)
-    print(sample["video_metadata"])
-    print(sample["audio"].shape)
-    print(sample["audio_fs"])
-    print(sample["label"])
+    print(
+        f'video shape: {sample["video"].shape}, video type: {sample["video"].dtype}, video min: {sample["video"].min()}, video max: {sample["video"].max()}'
+    )
+    print(f'video metadata: {sample["video_metadata"]}')
+    print(
+        f'audio shape: {sample["audio"].shape}, audio type: {sample["audio"].dtype}, audio min: {sample["audio"].min()}, audio max: {sample["audio"].max()}'
+    )
+    print(f'audio fs: {sample["audio_fs"]}')
+    # print(sample["label"])
