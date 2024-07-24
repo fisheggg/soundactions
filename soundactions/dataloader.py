@@ -1,14 +1,16 @@
 import os
 import glob
 
-# import numpy as np
+import numpy as np
 import pandas as pd
 import torch
 import torchaudio
 import torchvision
 
-# from tqdm import tqdm
-from torchvision.transforms import Compose, Normalize, Resize
+from tqdm import tqdm
+from torchvision.transforms import Compose, Normalize, Resize, ToTensor
+from torchaudio.transforms import Resample
+from torch.utils.data import DataLoader
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 
@@ -20,7 +22,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         load_mode="online",
         sample_mode="full",
         root: str = "/fp/homes01/u01/ec-jinyueg/felles_/Research/Project/AMBIENT/Datasets/SoundActions/",
-        video_path: str = "video-HD",
+        video_path: str = "video-frames",
         audio_path: str = "wav",
         label_path: str = "labels/SoundActions_labeling_A.csv",
         video_transform=None,
@@ -31,7 +33,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         assert sample_mode in ["full"]
 
         self.root = root
-        self.video_paths = sorted(glob.glob(os.path.join(root, video_path, "*.mp4")))
+        self.video_paths = sorted(glob.glob(os.path.join(root, video_path, "*")))
         self.audio_paths = sorted(glob.glob(os.path.join(root, audio_path, "*.wav")))
         assert len(self.video_paths) == len(self.audio_paths)
         self.labels = pd.read_csv(os.path.join(root, label_path))
@@ -43,10 +45,15 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self.load_mode = load_mode
         self.sample_mode = sample_mode
 
-        self.my_normalize = Compose(
+        self.video_standardize = Compose(
             [
-                Resize([192, 192], interpolation=Image.BICUBIC),
+                # Resize([192, 192], interpolation=Image.BICUBIC),
                 Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
+            ]
+        )
+        self.audio_standardize = Compose(
+            [
+                Resample(orig_freq=48000, new_freq=16000),
             ]
         )
 
@@ -62,15 +69,8 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             self.audios_fps = []
             print("=> Preloading SoundActions dataset...")
             for video_path, audio_path in zip(self.video_paths, self.audio_paths):
-                video, _, video_metadata = torchvision.io.read_video(
-                    video_path,
-                    pts_unit="sec",
-                )
-                audio, audio_fps = torchaudio.load(audio_path)
-                self.videos.append(self.my_normalize(video))
-                self.videos_metadata.append(video_metadata)
-                self.audios.append(audio)
-                self.audios_fps.append(audio_fps)
+                self.videos.append(self._load_video(video_path))
+                self.audios.append(self._load_audio(audio_path))
             print("=> Preloading done")
 
     def __len__(self):
@@ -79,21 +79,15 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         data = {}
-        data["label"] = self.labels.iloc[index]
+        # data["label"] = self.labels.iloc[index].to_dict()
         if self.load_mode == "online":
             video_path = self.video_paths[index]
             audio_path = self.audio_paths[index]
-            data["video"], _, data["video_metadata"] = torchvision.io.read_video(
-                video_path, pts_unit="sec", output_format="TCHW"
-            )
-            data["video"] = data["video"].to(torch.float32) / 255.0
-            data["video"] = self.my_normalize(data["video"])
-            data["audio"], data["audio_fs"] = torchaudio.load(audio_path)
+            data["video"] = self._load_video(video_path)
+            data["audio"] = self._load_audio(audio_path)
         elif self.load_mode == "preload":
             data["video"] = self.videos[index]
-            data["video_metadata"] = self.videos_metadata[index]
             data["audio"] = self.audios[index]
-            data["audio_fs"] = self.audios_fps[index]
 
         if self.video_transform is not None:
             data["video"] = self.video_transform(data["video"])
@@ -101,18 +95,88 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             data["audio"] = self.audio_transform(data["audio"])
         return data
 
+    def _load_video(
+        self,
+        video_frames_dir,
+        original_fps=25,
+        load_fps=1,
+        num_frames=10,
+        pad_mode="repeat",
+    ):
+        assert pad_mode in ["repeat", "zero"]
+
+        n_frames = len(glob.glob(os.path.join(video_frames_dir, "*.png")))
+        sample_frames = np.arange(num_frames) * original_fps / load_fps + 1
+
+        total_img = []
+        for frame_idx in sample_frames.astype(int):
+            if frame_idx <= n_frames:
+                img_path = os.path.join(video_frames_dir, f"{frame_idx:04}.png")
+                tmp_img = torchvision.io.read_image(img_path).to(torch.float32) / 255.0
+                tmp_img = self.video_standardize(tmp_img)
+            else:
+                tmp_img = (
+                    torch.zeros_like(total_img[-1])
+                    if pad_mode == "zero"
+                    else total_img[-1]
+                )
+            total_img.append(tmp_img)
+        total_img = torch.stack(total_img)
+
+        return total_img
+
+    def _load_audio(
+        self, audio_path, slice_length=32000, num_slices=10, pad_mode="repeat"
+    ):
+        assert pad_mode in ["repeat", "zero"]
+
+        audio, fs = torchaudio.load(audio_path)
+        audio = self.audio_standardize(audio).squeeze()
+        assert audio.ndim == 1
+        if audio.shape[0] >= slice_length * num_slices:
+            audio = audio[: slice_length * num_slices]
+            audio = audio.view(num_slices, slice_length)
+        elif pad_mode == "repeat":
+            max_slices = audio.shape[0] // slice_length
+            audio = audio[: slice_length * max_slices]
+            audio = audio.view(max_slices, slice_length)
+            for _ in range(num_slices - max_slices):
+                audio = audio.cat([audio, audio[-1].unsqueeze(0)], dim=0)
+        elif pad_mode == "zero":
+            max_slices = audio.shape[0] // slice_length
+            audio = audio[: slice_length * max_slices]
+            audio = audio.view(max_slices, slice_length)
+            for _ in range(num_slices - max_slices):
+                audio = audio.cat(
+                    [audio, torch.zeros_like(audio[-1]).unsqueeze(0)], dim=0
+                )
+
+        return audio
+
+
+def get_dataset_stats():
+    dataset = SoundActionsDataset("train")
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
+    durations = []
+    for sample in tqdm(dataloader):
+        duration = sample["video"].shape[0] / sample["video_metadata"]["video_fps"]
+        durations.append(duration)
+        del sample
+
+    print(f"=> durations: {durations}")
+
 
 if __name__ == "__main__":
     dataset = SoundActionsDataset("train")
-    # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
+    # # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
     print(len(dataset))
-    sample = dataset[0]
+    sample = dataset[279]
     print(
         f'video shape: {sample["video"].shape}, video type: {sample["video"].dtype}, video min: {sample["video"].min()}, video max: {sample["video"].max()}'
     )
-    print(f'video metadata: {sample["video_metadata"]}')
     print(
         f'audio shape: {sample["audio"].shape}, audio type: {sample["audio"].dtype}, audio min: {sample["audio"].min()}, audio max: {sample["audio"].max()}'
     )
-    print(f'audio fs: {sample["audio_fs"]}')
     # print(sample["label"])
+
+    # get_dataset_stats()
