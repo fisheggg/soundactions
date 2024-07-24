@@ -141,15 +141,18 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             audio = audio[: slice_length * max_slices]
             audio = audio.view(max_slices, slice_length)
             for _ in range(num_slices - max_slices):
-                audio = audio.cat([audio, audio[-1].unsqueeze(0)], dim=0)
+                audio = torch.cat([audio, audio[-1].unsqueeze(0)], dim=0)
         elif pad_mode == "zero":
             max_slices = audio.shape[0] // slice_length
             audio = audio[: slice_length * max_slices]
             audio = audio.view(max_slices, slice_length)
             for _ in range(num_slices - max_slices):
-                audio = audio.cat(
+                audio = torch.cat(
                     [audio, torch.zeros_like(audio[-1]).unsqueeze(0)], dim=0
                 )
+
+        # input shape of DGSCT is (10, 320000), each slice is repeated 10 times
+        audio = audio.repeat(1, 10)
 
         return audio
 
