@@ -27,7 +27,9 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         label_path: str = "labels/SoundActions_labeling_A.csv",
         video_transform=None,
         audio_transform=None,
+        pad_mode="zero",
         size: int = None,
+        orig_audio_fs: int = 48000,
     ):
         assert load_mode in ["preload", "online"]
         assert sample_mode in ["full"]
@@ -41,6 +43,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
         self.video_transform = video_transform
         self.audio_transform = audio_transform
+        self.pad_mode = pad_mode
         self.split_mode = split_mode
         self.load_mode = load_mode
         self.sample_mode = sample_mode
@@ -53,7 +56,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         )
         self.audio_standardize = Compose(
             [
-                Resample(orig_freq=48000, new_freq=16000),
+                Resample(orig_freq=orig_audio_fs, new_freq=32000),
             ]
         )
 
@@ -83,8 +86,8 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         if self.load_mode == "online":
             video_path = self.video_paths[index]
             audio_path = self.audio_paths[index]
-            data["video"] = self._load_video(video_path)
-            data["audio"] = self._load_audio(audio_path)
+            data["video"] = self._load_video(video_path, pad_mode=self.pad_mode)
+            data["audio"] = self._load_audio(audio_path, pad_mode=self.pad_mode)
         elif self.load_mode == "preload":
             data["video"] = self.videos[index]
             data["audio"] = self.audios[index]
@@ -103,7 +106,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         num_frames=10,
         pad_mode="repeat",
     ):
-        assert pad_mode in ["repeat", "zero"]
+        assert pad_mode in ["repeat", "zero", "ninf"]
 
         n_frames = len(glob.glob(os.path.join(video_frames_dir, "*.png")))
         sample_frames = np.arange(num_frames) * original_fps / load_fps + 1
@@ -114,12 +117,14 @@ class SoundActionsDataset(torch.utils.data.Dataset):
                 img_path = os.path.join(video_frames_dir, f"{frame_idx:04}.png")
                 tmp_img = torchvision.io.read_image(img_path).to(torch.float32) / 255.0
                 tmp_img = self.video_standardize(tmp_img)
+            elif pad_mode == "zero":
+                tmp_img = torch.zeros_like(total_img[-1])
+            elif pad_mode == "repeat":
+                tmp_img = total_img[-1]
+            elif pad_mode == "ninf":
+                tmp_img = torch.full_like(total_img[-1], -torch.inf)
             else:
-                tmp_img = (
-                    torch.zeros_like(total_img[-1])
-                    if pad_mode == "zero"
-                    else total_img[-1]
-                )
+                raise ValueError(f"Invalid pad_mode: {pad_mode}")
             total_img.append(tmp_img)
         total_img = torch.stack(total_img)
 
@@ -128,7 +133,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
     def _load_audio(
         self, audio_path, slice_length=32000, num_slices=10, pad_mode="repeat"
     ):
-        assert pad_mode in ["repeat", "zero"]
+        assert pad_mode in ["repeat", "zero", "ninf"]
 
         audio, fs = torchaudio.load(audio_path)
         audio = self.audio_standardize(audio).squeeze()
@@ -138,18 +143,31 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             audio = audio.view(num_slices, slice_length)
         elif pad_mode == "repeat":
             max_slices = audio.shape[0] // slice_length
-            audio = audio[: slice_length * max_slices]
-            audio = audio.view(max_slices, slice_length)
-            for _ in range(num_slices - max_slices):
+            audio_new = torch.zeros((max_slices + 1) * slice_length)
+            audio_new[: audio.shape[0]] = audio
+            audio = audio_new.view(max_slices + 1, slice_length)
+            for _ in range(num_slices - max_slices - 1):
                 audio = torch.cat([audio, audio[-1].unsqueeze(0)], dim=0)
         elif pad_mode == "zero":
             max_slices = audio.shape[0] // slice_length
-            audio = audio[: slice_length * max_slices]
-            audio = audio.view(max_slices, slice_length)
-            for _ in range(num_slices - max_slices):
+            audio_new = torch.zeros((max_slices + 1) * slice_length)
+            audio_new[: audio.shape[0]] = audio
+            audio = audio_new.view(max_slices + 1, slice_length)
+            for _ in range(num_slices - max_slices - 1):
                 audio = torch.cat(
                     [audio, torch.zeros_like(audio[-1]).unsqueeze(0)], dim=0
                 )
+        elif pad_mode == "ninf":
+            max_slices = audio.shape[0] // slice_length
+            audio_new = torch.zeros((max_slices + 1) * slice_length)
+            audio_new[: audio.shape[0]] = audio
+            audio = audio_new.view(max_slices + 1, slice_length)
+            for _ in range(num_slices - max_slices - 1):
+                audio = torch.cat(
+                    [audio, torch.full_like(audio[-1], -torch.inf).unsqueeze(0)], dim=0
+                )
+        else:
+            raise ValueError(f"Invalid pad_mode: {pad_mode}")
 
         # input shape of DGSCT is (10, 320000), each slice is repeated 10 times
         audio = audio.repeat(1, 10)
