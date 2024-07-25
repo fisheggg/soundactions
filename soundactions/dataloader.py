@@ -24,7 +24,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         root: str = "/fp/homes01/u01/ec-jinyueg/felles_/Research/Project/AMBIENT/Datasets/SoundActions/",
         video_path: str = "video-frames",
         audio_path: str = "wav",
-        label_path: str = "labels/SoundActions_labeling_A.csv",
+        label_path: str = "labels/SoundActions_labeling_combined.csv",
         video_transform=None,
         audio_transform=None,
         pad_mode="zero",
@@ -48,6 +48,50 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self.load_mode = load_mode
         self.sample_mode = sample_mode
 
+        if size is not None:
+            self.video_paths = self.video_paths[:size]
+            self.audio_paths = self.audio_paths[:size]
+            self.labels = self.labels.iloc[:size]
+
+        self.labels_dict = {
+            "PerceptionType": {
+                "Impulse": 0,
+                "Iterative": 1,
+                "Sustain": 2,
+                "Unknown": 3,
+            },
+            "Material": {
+                "metal": 0,
+                "wood": 1,
+                "plastic": 2,
+                "organic": 3,
+                "skin": 4,
+                "stone": 5,
+                "fabric": 6,
+                "rubber": 7,
+                "liquid": 8,
+                "snow": 9,
+                "ceramic": 10,
+                "paper": 11,
+                "leather": 12,
+                "electronic": 13,
+                "others": 14,
+            },
+            "Environment": {
+                "outdoor": 0,
+                "office": 1,
+                "room": 2,
+                "corridor": 3,
+                "hall": 4,
+                "bathroom": 5,
+                "kitchen": 6,
+                "car": 7,
+                "indoor": 8,
+            },
+            "Enjoyable": {"Yes": 0, "Neutral": 1, "No": 2, "Unknown": 3},
+        }
+        self._verify_labels()
+
         self.video_standardize = Compose(
             [
                 # Resize([192, 192], interpolation=Image.BICUBIC),
@@ -59,11 +103,6 @@ class SoundActionsDataset(torch.utils.data.Dataset):
                 Resample(orig_freq=orig_audio_fs, new_freq=32000),
             ]
         )
-
-        if size is not None:
-            self.video_paths = self.video_paths[:size]
-            self.audio_paths = self.audio_paths[:size]
-            self.labels = self.labels.iloc[:size]
 
         if self.load_mode == "preload":
             self.videos = []
@@ -82,7 +121,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         data = {}
-        # data["label"] = self.labels.iloc[index].to_dict()
+        data["label"] = self.labels.iloc[index].to_dict()
         if self.load_mode == "online":
             video_path = self.video_paths[index]
             audio_path = self.audio_paths[index]
@@ -174,6 +213,14 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
         return audio
 
+    def _verify_labels(self):
+        for idx, row in self.labels.iterrows():
+            # one-hot labels
+            for label in ["PerceptionType", "Environment", "Enjoyable"]:
+                if row[label] not in list(self.labels_dict[label]):
+                    raise ValueError(f"Invalid label: '{row[label]}' for the following sample:\n{row}")
+            #TODO verify multi-hot labels
+
 
 def get_dataset_stats():
     dataset = SoundActionsDataset("train")
@@ -191,13 +238,13 @@ if __name__ == "__main__":
     dataset = SoundActionsDataset("train")
     # # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
     print(len(dataset))
-    sample = dataset[279]
+    sample = dataset[0]
     print(
         f'video shape: {sample["video"].shape}, video type: {sample["video"].dtype}, video min: {sample["video"].min()}, video max: {sample["video"].max()}'
     )
     print(
         f'audio shape: {sample["audio"].shape}, audio type: {sample["audio"].dtype}, audio min: {sample["audio"].min()}, audio max: {sample["audio"].max()}'
     )
-    # print(sample["label"])
+    print(sample["label"])
 
     # get_dataset_stats()

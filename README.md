@@ -9,6 +9,7 @@ Code repository for paper "Investigating Aesthetic Audio-Visual Perception of Mu
 - Environment: majority vote, fallback to indoor others if no majority
     - outdoor, office, room, corridor, hall, bathroom, kitchen, car, indoor others
 - Enjoyability: majority vote, unknown if no majority
+    - Yes, Neutral, No, Unknown
 
 
 ## Requirements
