@@ -140,10 +140,10 @@ class SoundActionsDataset(torch.utils.data.Dataset):
     def _load_video(
         self,
         video_frames_dir,
+        pad_mode,
         original_fps=25,
         load_fps=1,
         num_frames=10,
-        pad_mode="repeat",
     ):
         assert pad_mode in ["repeat", "zero", "ninf"]
 
@@ -170,7 +170,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         return total_img
 
     def _load_audio(
-        self, audio_path, slice_length=32000, num_slices=10, pad_mode="repeat"
+        self, audio_path, pad_mode, slice_length=32000, num_slices=10
     ):
         assert pad_mode in ["repeat", "zero", "ninf"]
 
@@ -218,8 +218,10 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             # one-hot labels
             for label in ["PerceptionType", "Environment", "Enjoyable"]:
                 if row[label] not in list(self.labels_dict[label]):
-                    raise ValueError(f"Invalid label: '{row[label]}' for the following sample:\n{row}")
-            #TODO verify multi-hot labels
+                    raise ValueError(
+                        f"Invalid label: '{row[label]}' for the following sample:\n{row}"
+                    )
+            # TODO verify multi-hot labels
 
 
 def get_dataset_stats():

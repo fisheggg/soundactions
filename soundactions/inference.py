@@ -1,3 +1,4 @@
+
 import sys
 import torch
 import numpy as np
@@ -5,6 +6,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from pathlib import Path
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
@@ -31,8 +33,9 @@ label_color_map = {
 }
 
 
-def plot_embeddings(save_path=None, coloring_label=None):
-    soundactions = SoundActionsDataset("train")
+def plot_embeddings(save_path=None, pad_mode="zero", coloring_label=None, dr_alg="tsne"):
+    assert dr_alg in ["tsne", "pca"]
+    soundactions = SoundActionsDataset("train", pad_mode=pad_mode)
 
     print("=> Loading model...")
     model = load_DGSCT().eval().cuda()
@@ -49,11 +52,14 @@ def plot_embeddings(save_path=None, coloring_label=None):
         embeds[i] = (video_embed + audio_embed) / 2
         colors.append(label_color_map[coloring_label][sample["label"][coloring_label]])
 
-    tsne = TSNE(n_components=2).fit_transform(embeds)
+    if dr_alg == "pca":
+        out = PCA(n_components=2).fit_transform(embeds)
+    elif dr_alg == "tsne":
+        out = TSNE(n_components=2).fit_transform(embeds)
 
     plt.figure(figsize=(10, 10))
-    plt.scatter(tsne[:, 0], tsne[:, 1], c=colors)
-    plt.title(f"TSNE of SoundActions, colored by {coloring_label}")
+    plt.scatter(out[:, 0], out[:, 1], c=colors)
+    plt.title(f"SoundActions embeddings from DG-SCT, {dr_alg}, {coloring_label}")
     plt.legend()
 
     if save_path is not None:
@@ -62,4 +68,4 @@ def plot_embeddings(save_path=None, coloring_label=None):
 
 
 if __name__ == "__main__":
-    embeddings_plot()
+    plot_embeddings()
