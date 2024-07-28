@@ -52,8 +52,8 @@ def cross_valid_finetune(target_label, n_splits, batch_size=16):
 
         trainer = pl.Trainer(
             accelerator="gpu",
-            max_epochs=10,
-            log_every_n_steps=1,
+            max_epochs=1000,
+            log_every_n_steps=19,
         )
 
         trainer.fit(model, train_loader, valid_loader)
@@ -105,34 +105,12 @@ class LitDGSCT(pl.LightningModule):
         return [optimizer], [scheduler]
 
     def validation_step(self, batch, batch_idx):
-        with torch.no_grad():
-            labels = batch["label"][self.target_label].to(self.device)
-            audio = batch["audio"].to(self.device)
-            video = batch["video"].to(self.device)
-            is_event_scores, event_scores, _, _, _, _ = self.model([audio], video)
-            is_event_scores = is_event_scores.transpose(1, 0).squeeze(-1).contiguous()
-            acc = self.compute_accuracy_supervised(
-                is_event_scores, event_scores, labels
-            )
+        labels = batch["label"][self.target_label].to(self.device)
+        audio = batch["audio"].to(self.device)
+        video = batch["video"].to(self.device)
+        _, event_scores, _, _, _, _ = self.model([audio], video)
+        acc = (event_scores.argmax(1) == labels).float().mean()
         self.log("val_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
-
-    def compute_accuracy_supervised(self, is_event_scores, event_scores, labels):
-        # labels = labels[:, :, :-1]  # 28 denote background
-        _, targets = labels.max(-1)
-        # pos pred
-        is_event_scores = is_event_scores.sigmoid()
-        scores_pos_ind = is_event_scores > 0.5
-        # scores_mask = scores_pos_ind == 0
-        _, event_class = event_scores.max(-1)  # foreground classification
-        pred = scores_pos_ind.long()
-        pred *= event_class[:, None]
-        # pred[scores_mask] = 28  # 141 denotes bg
-        correct = pred.eq(targets)
-        correct_num = correct.sum().double()
-        acc = correct_num * (100.0 / correct.numel())
-
-        return acc
-
 
 if __name__ == "__main__":
     cross_valid_finetune("PerceptionType", 5)
