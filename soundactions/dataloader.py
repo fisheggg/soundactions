@@ -13,12 +13,12 @@ from torchaudio.transforms import Resample
 from torch.utils.data import DataLoader
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from sklearn.model_selection import KFold
 
 
 class SoundActionsDataset(torch.utils.data.Dataset):
     def __init__(
         self,
-        split_mode,
         load_mode="online",
         sample_mode="full",
         root: str = "/fp/homes01/u01/ec-jinyueg/felles_/Research/Project/AMBIENT/Datasets/SoundActions/",
@@ -44,7 +44,6 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self.video_transform = video_transform
         self.audio_transform = audio_transform
         self.pad_mode = pad_mode
-        self.split_mode = split_mode
         self.load_mode = load_mode
         self.sample_mode = sample_mode
 
@@ -111,8 +110,8 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             self.audios_fps = []
             print("=> Preloading SoundActions dataset...")
             for video_path, audio_path in zip(self.video_paths, self.audio_paths):
-                self.videos.append(self._load_video(video_path))
-                self.audios.append(self._load_audio(audio_path))
+                self.videos.append(self._load_video(video_path, pad_mode=self.pad_mode))
+                self.audios.append(self._load_audio(audio_path, pad_mode=self.pad_mode))
             print("=> Preloading done")
 
     def __len__(self):
@@ -169,9 +168,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
 
         return total_img
 
-    def _load_audio(
-        self, audio_path, pad_mode, slice_length=32000, num_slices=10
-    ):
+    def _load_audio(self, audio_path, pad_mode, slice_length=32000, num_slices=10):
         assert pad_mode in ["repeat", "zero", "ninf"]
 
         audio, fs = torchaudio.load(audio_path)
@@ -223,6 +220,35 @@ class SoundActionsDataset(torch.utils.data.Dataset):
                     )
             # TODO verify multi-hot labels
 
+    def gen_crossvalid_idx(self, label: str, n_splits=5, random_state=42, shuffle=True):
+        """
+        Generate k-fold cross valid indices for a specific label
+        each class will be split according to the original distribution
+        e.g. class A has 100 samples, B has 50 samples, C has 10 samples
+            for a 5-fold split, each of the folds will have:
+                train: 80, 40, 8 samples from A, B, C
+                valid: 20, 10, 2 samples from A, B, C
+
+        Returns
+        -------
+        out_splits: list of dict
+            out_splits[i] = {"train": list[int], "val": list[int]}
+        """
+        assert label in ["PerceptionType", "Environment", "Enjoyable"]
+
+        labels = self.labels[label].unique().tolist()
+        out_splits = []
+        for i in range(n_splits):
+            out_splits.append({"train": [], "valid": []})
+        kfold = KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        for lab in labels:
+            lab_list = self.labels[self.labels[label] == lab].index
+            for i, idx in enumerate(kfold.split(lab_list.tolist())):
+                train_idx, val_idx = idx
+                out_splits[i]["train"].extend(lab_list[train_idx].tolist())
+                out_splits[i]["valid"].extend(lab_list[val_idx].tolist())
+        return out_splits
+
 
 def get_dataset_stats():
     dataset = SoundActionsDataset("train")
@@ -234,6 +260,7 @@ def get_dataset_stats():
         del sample
 
     print(f"=> durations: {durations}")
+    # TODO: summarize labels
 
 
 if __name__ == "__main__":
