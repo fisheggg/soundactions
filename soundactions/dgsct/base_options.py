@@ -181,6 +181,11 @@ class BaseOptions():
 		
 		self.parser.add_argument('--root_path', type=str)
 
+		#############################
+		### SoundActions options  ###
+		#############################
+		self.parser.add_argument('--num_class', type=int, default=28, help='number of classes')
+
 	def parse(self):
 		if not self.initialized:
 			self.initialize()

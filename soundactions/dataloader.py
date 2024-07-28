@@ -106,8 +106,12 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             ]
         )
 
-        self.video_shape = self._load_video(self.video_paths[0], pad_mode=self.pad_mode).shape
-        self.audio_shape = self._load_audio(self.audio_paths[0], pad_mode=self.pad_mode).shape
+        self.video_shape = self._load_video(
+            self.video_paths[0], pad_mode=self.pad_mode
+        ).shape
+        self.audio_shape = self._load_audio(
+            self.audio_paths[0], pad_mode=self.pad_mode
+        ).shape
 
         if self.load_mode == "preload":
             self.videos = []
@@ -117,22 +121,26 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             print("=> Preloading SoundActions dataset...")
             for video_path, audio_path in zip(self.video_paths, self.audio_paths):
                 if "v" in self.modality:
-                    self.videos.append(self._load_video(video_path, pad_mode=self.pad_mode))
+                    self.videos.append(
+                        self._load_video(video_path, pad_mode=self.pad_mode)
+                    )
                 if "a" in self.modality:
-                    self.audios.append(self._load_audio(audio_path, pad_mode=self.pad_mode))
-                    
+                    self.audios.append(
+                        self._load_audio(audio_path, pad_mode=self.pad_mode)
+                    )
+
             print("=> Preloading done")
 
     def __len__(self):
         if self.sample_mode == "full":
             return len(self.video_paths)
 
-    def __getitem__(self, index):
+    def __getitem__(self, idx):
         data = {}
-        data["label"] = self.labels.iloc[index].to_dict()
+        data["label"] = self._convert_label(self.labels.iloc[idx].to_dict())
         if self.load_mode == "online":
-            video_path = self.video_paths[index]
-            audio_path = self.audio_paths[index]
+            video_path = self.video_paths[idx]
+            audio_path = self.audio_paths[idx]
             if "v" in self.modality:
                 data["video"] = self._load_video(video_path, pad_mode=self.pad_mode)
                 if self.video_transform is not None:
@@ -147,19 +155,31 @@ class SoundActionsDataset(torch.utils.data.Dataset):
                 data["audio"] = torch.zeros(self.audio_shape)
         elif self.load_mode == "preload":
             if "v" in self.modality:
-                data["video"] = self.videos[index]
+                data["video"] = self.videos[idx]
                 if self.video_transform is not None:
                     data["video"] = self.video_transform(data["video"])
             else:
                 data["video"] = torch.zeros(self.video_shape)
             if "a" in self.modality:
-                data["audio"] = self.audios[index]
+                data["audio"] = self.audios[idx]
                 if self.audio_transform is not None:
                     data["audio"] = self.audio_transform(data["audio"])
             else:
                 data["audio"] = torch.zeros(self.audio_shape)
 
         return data
+
+    def _convert_label(self, label: dict):
+        """
+        convert str labels to numerical labels
+        """
+        out_dict = {}
+        for key, value in label.items():
+            if key in ["PerceptionType", "Environment", "Enjoyable"]:
+                out_dict[key] = self.labels_dict[key][value]
+            else:
+                pass
+        return out_dict
 
     def _load_video(
         self,

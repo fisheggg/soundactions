@@ -113,25 +113,18 @@ class CAS_Module(nn.Module):
 
 
 class SupvLocalizeModule(nn.Module):
-    def __init__(self, d_model):
+    def __init__(self, d_model, num_classes=28):
         super(SupvLocalizeModule, self).__init__()
-        # self.affine_concat = nn.Linear(2*256, 256)
         self.relu = nn.ReLU(inplace=True)
         self.classifier = nn.Linear(d_model, 1)  # start and end
-        self.event_classifier = nn.Linear(d_model, 28)
-        # self.cas_model = CAS_Module(d_model=d_model, num_class=28)
+        self.event_classifier = nn.Linear(d_model, num_classes)
 
     # self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, fused_content):
         max_fused_content, _ = fused_content.transpose(1, 0).max(1)
         logits = self.classifier(fused_content)
-        # scores = self.softmax(logits)
         class_logits = self.event_classifier(max_fused_content)
-        # class_logits = self.event_classifier(fused_content.transpose(1,0))
-        # sorted_scores_base,_ = class_logits.sort(descending=True, dim=1)
-        # topk_scores_base = sorted_scores_base[:, :4, :]
-        # class_logits = torch.mean(topk_scores_base, dim=1)
         class_scores = class_logits
 
         return logits, class_scores
@@ -251,19 +244,20 @@ class TemporalAttention(nn.Module):
     
     
 class CMBS(nn.Module):
-    def __init__(self, config):
+    def __init__(self, opt, num_classes: int = 28):
         super(CMBS, self).__init__()
-        self.config = config
+        self.opt = opt
+        self.num_classes = num_classes
         self.beta = 0.4
         self.d_model = 256
 
         self.AVInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=0.2)
         self.VAInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=0.2)
-        self.localize_module = SupvLocalizeModule(self.d_model)
+        self.localize_module = SupvLocalizeModule(self.d_model, self.num_classes)
         self.video_norm = nn.LayerNorm(self.d_model)
         self.audio_norm = nn.LayerNorm(self.d_model)
-        self.audio_cas = nn.Linear(self.d_model, 28)
-        self.video_cas = nn.Linear(self.d_model, 28)
+        self.audio_cas = nn.Linear(self.d_model, self.num_classes)
+        self.video_cas = nn.Linear(self.d_model, self.num_classes)
         self.alpha = 0.1
         self.gamma = 0.3
 
@@ -693,7 +687,7 @@ class MMIL_Net(nn.Module):
 		# self.swin = timm.create_model('swinv2_base_window12_192_22k', pretrained=True)
         
 		if opt.backbone_type == "esc-50":
-			esc_config.dataset_path = "your processed ESC-50 folder"
+			esc_self.dataset_path = "your processed ESC-50 folder"
 			esc_config.dataset_type = "esc-50"
 			esc_config.loss_type = "clip_ce"
 			esc_config.sample_rate = 32000
