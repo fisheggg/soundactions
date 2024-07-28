@@ -21,6 +21,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self,
         load_mode="online",
         sample_mode="full",
+        modality="av",
         root: str = "/fp/homes01/u01/ec-jinyueg/felles_/Research/Project/AMBIENT/Datasets/SoundActions/",
         video_path: str = "video-frames",
         audio_path: str = "wav",
@@ -33,6 +34,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
     ):
         assert load_mode in ["preload", "online"]
         assert sample_mode in ["full"]
+        assert modality in ["a", "v", "av"]
 
         self.root = root
         self.video_paths = sorted(glob.glob(os.path.join(root, video_path, "*")))
@@ -46,6 +48,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         self.pad_mode = pad_mode
         self.load_mode = load_mode
         self.sample_mode = sample_mode
+        self.modality = modality
 
         if size is not None:
             self.video_paths = self.video_paths[:size]
@@ -103,6 +106,9 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             ]
         )
 
+        self.video_shape = self._load_video(self.video_paths[0], pad_mode=self.pad_mode).shape
+        self.audio_shape = self._load_audio(self.audio_paths[0], pad_mode=self.pad_mode).shape
+
         if self.load_mode == "preload":
             self.videos = []
             self.videos_metadata = []
@@ -110,8 +116,11 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             self.audios_fps = []
             print("=> Preloading SoundActions dataset...")
             for video_path, audio_path in zip(self.video_paths, self.audio_paths):
-                self.videos.append(self._load_video(video_path, pad_mode=self.pad_mode))
-                self.audios.append(self._load_audio(audio_path, pad_mode=self.pad_mode))
+                if "v" in self.modality:
+                    self.videos.append(self._load_video(video_path, pad_mode=self.pad_mode))
+                if "a" in self.modality:
+                    self.audios.append(self._load_audio(audio_path, pad_mode=self.pad_mode))
+                    
             print("=> Preloading done")
 
     def __len__(self):
@@ -124,16 +133,32 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         if self.load_mode == "online":
             video_path = self.video_paths[index]
             audio_path = self.audio_paths[index]
-            data["video"] = self._load_video(video_path, pad_mode=self.pad_mode)
-            data["audio"] = self._load_audio(audio_path, pad_mode=self.pad_mode)
+            if "v" in self.modality:
+                data["video"] = self._load_video(video_path, pad_mode=self.pad_mode)
+                if self.video_transform is not None:
+                    data["video"] = self.video_transform(data["video"])
+            else:
+                data["video"] = torch.zeros(self.video_shape)
+            if "a" in self.modality:
+                data["audio"] = self._load_audio(audio_path, pad_mode=self.pad_mode)
+                if self.audio_transform is not None:
+                    data["audio"] = self.audio_transform(data["audio"])
+            else:
+                data["audio"] = torch.zeros(self.audio_shape)
         elif self.load_mode == "preload":
-            data["video"] = self.videos[index]
-            data["audio"] = self.audios[index]
+            if "v" in self.modality:
+                data["video"] = self.videos[index]
+                if self.video_transform is not None:
+                    data["video"] = self.video_transform(data["video"])
+            else:
+                data["video"] = torch.zeros(self.video_shape)
+            if "a" in self.modality:
+                data["audio"] = self.audios[index]
+                if self.audio_transform is not None:
+                    data["audio"] = self.audio_transform(data["audio"])
+            else:
+                data["audio"] = torch.zeros(self.audio_shape)
 
-        if self.video_transform is not None:
-            data["video"] = self.video_transform(data["video"])
-        if self.audio_transform is not None:
-            data["audio"] = self.audio_transform(data["audio"])
         return data
 
     def _load_video(
