@@ -2,8 +2,11 @@ import sys
 from pathlib import Path
 
 import torch
+import wandb
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning import seed_everything
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
@@ -11,10 +14,12 @@ from dgsct.nets.net_trans import CMBS, MMIL_Net
 from dataloader import SoundActionsDataset
 
 
-def cross_valid_finetune(target_label, n_splits, batch_size=16):
+def cross_valid_finetune(target_label, n_splits, batch_size=16, use_wandb=True, seed=18):
     """
     k-fold cross validation finetuning
     """
+    seed_everything(seed)
+
     # generate folds
     soundactions = SoundActionsDataset(load_mode="preload")
     splits = soundactions.gen_crossvalid_idx(target_label, n_splits)
@@ -50,13 +55,24 @@ def cross_valid_finetune(target_label, n_splits, batch_size=16):
             num_workers=1,
         )
 
+        if use_wandb:
+            wandb_logger = WandbLogger(
+                project="soundactions", name=f"finetune_{target_label}_{i}",
+                save_dir=Path(__file__).resolve().parent / "logs/{target_label}"
+            )
+        es_cb = pl.callbacks.EarlyStopping(monitor="train_loss", patience=10, mode="min")
+        lr_mn = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
+
         trainer = pl.Trainer(
             accelerator="gpu",
             max_epochs=1000,
             log_every_n_steps=19,
+            logger=wandb_logger if use_wandb else None,
+            callbacks=[es_cb, lr_mn],
         )
 
         trainer.fit(model, train_loader, valid_loader)
+        wandb.finish()
 
 
 class LitDGSCT(pl.LightningModule):
@@ -81,36 +97,63 @@ class LitDGSCT(pl.LightningModule):
         # set paramters
         self.target_label = target_label
         self.lr = lr
+        self.save_hyperparameters()
+        self.loss = torch.nn.CrossEntropyLoss()
 
     def forward(self, **kwargs):
         self.model(**kwargs)
 
-    def training_step(self, batch, batch_idx):
-        criterion = torch.nn.CrossEntropyLoss()
+    def cal_acc(self, pred, label):
+        return (pred.argmax(1) == label).float().mean()
 
-        _, event_scores, _, av_score, e, f = self.model(
-            [batch["audio"].to(self.device)], batch["video"].to(self.device)
+    def training_step(self, batch, batch_idx):
+        label = batch["label"][self.target_label].to(self.device)
+        audio = batch["audio"].to(self.device)
+        video = batch["video"].to(self.device)
+
+        _, event_scores, _, av_score, _, _ = self.model([audio], video)
+
+        loss = self.loss(event_scores, label) + self.loss(av_score, label)
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(
+            "train_acc",
+            self.cal_acc
+            (event_scores, label),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
         )
 
-        label = batch["label"][self.target_label].to(self.device)
-
-        loss_event = criterion(event_scores, label)
-        loss_cas = criterion(av_score, label)
-
-        return loss_event + loss_cas
+        return loss
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.35)
-        return [optimizer], [scheduler]
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="min", factor=0.5, patience=5, verbose=True
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": scheduler,
+            "monitor": "train_loss",
+        }
 
     def validation_step(self, batch, batch_idx):
-        labels = batch["label"][self.target_label].to(self.device)
+        label = batch["label"][self.target_label].to(self.device)
         audio = batch["audio"].to(self.device)
         video = batch["video"].to(self.device)
-        _, event_scores, _, _, _, _ = self.model([audio], video)
-        acc = (event_scores.argmax(1) == labels).float().mean()
-        self.log("val_acc", acc, on_step=False, on_epoch=True, prog_bar=True)
+
+        _, event_scores, _, av_score, _, _ = self.model([audio], video)
+        loss = self.loss(event_scores, label) + self.loss(av_score, label)
+
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
+        self.log(
+            "val_acc",
+            self.cal_acc(event_scores, label),
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+        )
+
 
 if __name__ == "__main__":
     cross_valid_finetune("PerceptionType", 5)
