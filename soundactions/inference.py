@@ -1,4 +1,3 @@
-
 import sys
 import torch
 import numpy as np
@@ -33,7 +32,14 @@ label_color_map = {
 }
 
 
-def plot_embeddings(save_path=None, pad_mode="zero", coloring_label=None, dr_alg="tsne"):
+def plot_embeddings(
+    input_modality: str,
+    output_modality: str,
+    save_path=None,
+    pad_mode="zero",
+    coloring_label=None,
+    dr_alg="tsne",
+):
     assert dr_alg in ["tsne", "pca"]
     soundactions = SoundActionsDataset("train", pad_mode=pad_mode)
 

@@ -731,7 +731,7 @@ class MMIL_Net(nn.Module):
 		)
         
 		# checkpoint_path = os.path.join(esc_config.checkpoint_path, esc_config.checkpoint)
-		checkpoint_path = os.path.join("/fp/homes01/u01/ec-jinyueg/felles_/Research/Users/jinyueg/SoundActions/soundactions/checkpoints/dg-sct/backbone/AudioSet/HTSAT_AudioSet_Saved_1.ckpt")
+		checkpoint_path = os.path.join("/projects/ec12/jinyueg/SoundActions/soundactions/checkpoints/dg-sct/backbone/AudioSet/HTSAT_AudioSet_Saved_1.ckpt")
 		tmp = torch.load(checkpoint_path, map_location='cpu')
 		tmp = {k[10:]:v for k, v in tmp['state_dict'].items()}
 		self.htsat.load_state_dict(tmp, strict=True)
