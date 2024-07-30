@@ -22,7 +22,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         load_mode="online",
         sample_mode="full",
         modality="av",
-        root: str = "/fp/homes01/u01/ec-jinyueg/felles_/Research/Project/AMBIENT/Datasets/SoundActions/",
+        root: str = "/projects/ec12/jinyueg/SoundActions/data",
         video_path: str = "video-frames",
         audio_path: str = "wav",
         label_path: str = "labels/SoundActions_labeling_combined.csv",

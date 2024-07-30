@@ -14,14 +14,23 @@ from dgsct.nets.net_trans import CMBS, MMIL_Net
 from dataloader import SoundActionsDataset
 
 
-def cross_valid_finetune(target_label, n_splits, batch_size=16, use_wandb=True, seed=18):
+def cross_valid_finetune(
+    target_label,
+    exp_name,
+    data_modality,
+    n_splits,
+    batch_size=16,
+    use_wandb=True,
+    lr=5e-4,
+    seed=18,
+):
     """
     k-fold cross validation finetuning
     """
     seed_everything(seed)
 
     # generate folds
-    soundactions = SoundActionsDataset(load_mode="preload")
+    soundactions = SoundActionsDataset(load_mode="preload", modality=data_modality)
     splits = soundactions.gen_crossvalid_idx(target_label, n_splits)
 
     label_num_classes = {
@@ -35,6 +44,7 @@ def cross_valid_finetune(target_label, n_splits, batch_size=16, use_wandb=True, 
         new_cls_head=True,
         num_classes=label_num_classes[target_label],
         mode="finetune",
+        lr=lr,
     )
 
     results = []
@@ -57,10 +67,14 @@ def cross_valid_finetune(target_label, n_splits, batch_size=16, use_wandb=True, 
 
         if use_wandb:
             wandb_logger = WandbLogger(
-                project="soundactions", name=f"finetune_{target_label}_{i}",
-                save_dir=Path(__file__).resolve().parent / "logs/{target_label}"
+                project="soundactions",
+                name=f"{exp_name}_cls_{target_label}_{data_modality}_{i}",
+                save_dir=Path(__file__).resolve().parent
+                / f"logs/{exp_name}_cls_{data_modality}_{target_label}",
             )
-        es_cb = pl.callbacks.EarlyStopping(monitor="train_loss", patience=10, mode="min")
+        es_cb = pl.callbacks.EarlyStopping(
+            monitor="train_loss", patience=10, mode="min"
+        )
         lr_mn = pl.callbacks.LearningRateMonitor(logging_interval="epoch")
 
         trainer = pl.Trainer(
@@ -69,6 +83,7 @@ def cross_valid_finetune(target_label, n_splits, batch_size=16, use_wandb=True, 
             log_every_n_steps=19,
             logger=wandb_logger if use_wandb else None,
             callbacks=[es_cb, lr_mn],
+            enable_progress_bar=False,
         )
 
         trainer.fit(model, train_loader, valid_loader)
@@ -83,7 +98,7 @@ class LitDGSCT(pl.LightningModule):
         new_cls_head: bool,
         num_classes: int = None,
         mode="train",
-        lr=5e-4,
+        lr=1e-3,
     ):
         super().__init__()
         assert mode in ["train", "test", "finetune"]
@@ -117,8 +132,7 @@ class LitDGSCT(pl.LightningModule):
         self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=False)
         self.log(
             "train_acc",
-            self.cal_acc
-            (event_scores, label),
+            self.cal_acc(event_scores, label),
             on_step=False,
             on_epoch=True,
             prog_bar=True,
@@ -156,4 +170,10 @@ class LitDGSCT(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    cross_valid_finetune("PerceptionType", 5)
+    cross_valid_finetune(
+        target_label="PerceptionType",
+        exp_name="E",
+        data_modality="a",
+        n_splits=5,
+        lr=5e-4,
+    )
