@@ -7,6 +7,15 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
+from torchvision.transforms.v2 import (
+    Compose,
+    RandomHorizontalFlip,
+    RandomPerspective,
+    ElasticTransform,
+    ColorJitter,
+    GaussianBlur,
+    RandomApply,
+)
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
@@ -15,39 +24,61 @@ from dataloader import SoundActionsDataset
 
 
 def cross_valid_finetune(
-    target_label,
-    exp_name,
-    data_modality,
-    n_splits,
-    batch_size=16,
-    use_wandb=True,
-    lr=5e-4,
-    seed=18,
+    target_label: str,
+    finetune_mode: str,
+    exp_name: str,
+    train_modality: str,
+    valid_modality: str,
+    n_splits: int,
+    batch_size: int = 16,
+    use_wandb: bool = True,
+    lr: int = 1e-3,
+    seed: int = 18,
 ):
     """
     k-fold cross validation finetuning
     """
-    seed_everything(seed)
-
-    # generate folds
-    soundactions = SoundActionsDataset(load_mode="preload", modality=data_modality)
-    splits = soundactions.gen_crossvalid_idx(target_label, n_splits)
-
     label_num_classes = {
         "PerceptionType": 4,
         "Enjoyable": 4,
     }
+    assert target_label in label_num_classes
+    assert finetune_mode in ["cls", "all"]
+    assert train_modality in ["av", "a", "v"]
+    assert valid_modality in ["av", "a", "v"]
+
+    seed_everything(seed)
+
+    # apply video transform in finetune mode is "all"
+    if finetune_mode == "all":
+        video_transform = Compose(
+            [
+                RandomHorizontalFlip(p=0.5),
+                ColorJitter(brightness=0.3, hue=0.2),
+                GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+            ]
+        )
+    else:
+        video_transform = None
+
+    # generate folds
+    soundactions = SoundActionsDataset(
+        load_mode="preload", modality=train_modality, video_transform=video_transform
+    )
+    soundactions_valid = SoundActionsDataset(
+        load_mode="preload", modality=valid_modality
+    )
+    splits = soundactions.gen_crossvalid_idx(target_label, n_splits)
 
     model = LitDGSCT(
         target_label,
         pretrain=True,
         new_cls_head=True,
         num_classes=label_num_classes[target_label],
-        mode="finetune",
+        mode=f"finetune_{finetune_mode}",
         lr=lr,
     )
 
-    results = []
     for i, split in enumerate(splits):
         print(f"=> Finetuning fold {i+1}/{n_splits}")
         train_loader = DataLoader(
@@ -58,7 +89,7 @@ def cross_valid_finetune(
             num_workers=1,
         )
         valid_loader = DataLoader(
-            Subset(soundactions, split["valid"]),
+            Subset(soundactions_valid, split["valid"]),
             batch_size=batch_size,
             shuffle=False,
             pin_memory=True,
@@ -68,9 +99,9 @@ def cross_valid_finetune(
         if use_wandb:
             wandb_logger = WandbLogger(
                 project="soundactions",
-                name=f"{exp_name}_cls_{target_label}_{data_modality}_{i}",
+                name=f"{exp_name}_{finetune_mode}_{target_label}_{train_modality}_{i}",
                 save_dir=Path(__file__).resolve().parent
-                / f"logs/{exp_name}_cls_{data_modality}_{target_label}",
+                / f"logs/{exp_name}_{finetune_mode}_{train_modality}_{target_label}",
             )
         es_cb = pl.callbacks.EarlyStopping(
             monitor="train_loss", patience=10, mode="min"
@@ -101,7 +132,7 @@ class LitDGSCT(pl.LightningModule):
         lr=1e-3,
     ):
         super().__init__()
-        assert mode in ["train", "test", "finetune"]
+        assert mode in ["train", "test", "finetune_cls", "finetune_all"]
 
         # load model
         self.model = load_DGSCT(pretrain=pretrain, mode=mode)
@@ -171,9 +202,12 @@ class LitDGSCT(pl.LightningModule):
 
 if __name__ == "__main__":
     cross_valid_finetune(
-        target_label="PerceptionType",
-        exp_name="E",
-        data_modality="a",
+        exp_name="W00",
+        target_label="Enjoyable",
+        finetune_mode="all",
+        batch_size=4,
+        train_modality="av",
+        valid_modality="av",
         n_splits=5,
-        lr=5e-4,
+        lr=5e-3,
     )

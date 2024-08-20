@@ -11,6 +11,7 @@ from tqdm import tqdm
 from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 from torchaudio.transforms import Resample
 from torch.utils.data import DataLoader
+from torchvision import tv_tensors
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from sklearn.model_selection import KFold
@@ -211,7 +212,7 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             total_img.append(tmp_img)
         total_img = torch.stack(total_img)
 
-        return total_img
+        return tv_tensors.Video(total_img)
 
     def _load_audio(self, audio_path, pad_mode, slice_length=32000, num_slices=10):
         assert pad_mode in ["repeat", "zero", "ninf"]
@@ -309,12 +310,12 @@ def get_dataset_stats():
 
 
 if __name__ == "__main__":
-    dataset = SoundActionsDataset("train")
+    dataset = SoundActionsDataset()
     # # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
     print(len(dataset))
     sample = dataset[0]
     print(
-        f'video shape: {sample["video"].shape}, video type: {sample["video"].dtype}, video min: {sample["video"].min()}, video max: {sample["video"].max()}'
+        f'video shape: {sample["video"].shape}, video type: {type(sample["video"])}, video dtype: {sample["video"].dtype} video min: {sample["video"].min()}, video max: {sample["video"].max()}'
     )
     print(
         f'audio shape: {sample["audio"].shape}, audio type: {sample["audio"].dtype}, audio min: {sample["audio"].min()}, audio max: {sample["audio"].max()}'

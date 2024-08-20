@@ -11,7 +11,7 @@ def load_DGSCT(pretrain: bool, mode: str, **kwargs):
     ## test: no trainable params
     ## train: train adapter + CMBS + mlp_class
     ## finetune: train CMBS + mlp_class
-    assert mode in ["test", "train", "finetune"]
+    assert mode in ["test", "train", "finetune_cls", "finetune_all"]
     options = BaseOptions()
     options.initialize()
 
@@ -70,7 +70,7 @@ def load_DGSCT(pretrain: bool, mode: str, **kwargs):
             "--seed=43",
             "--backbone_type=audioset",
         ]
-    elif mode == "finetune":
+    elif mode.split("_")[0] == "finetune":
         args_list = [
             "--Adapter_downsample=8",
             "--accum_itr=4",
@@ -134,7 +134,7 @@ def load_DGSCT(pretrain: bool, mode: str, **kwargs):
                 param.requires_grad = True
             if 'mlp_class' in name:
                 param_group.append({"params": param, "lr":args.lr_mlp})
-    elif mode == "finetune":
+    elif mode == "finetune_cls":
         param_group = []
         for name, param in model.named_parameters():
             param.requires_grad = False
@@ -157,5 +157,30 @@ def load_DGSCT(pretrain: bool, mode: str, **kwargs):
                 param_group.append({"params": param, "lr":args.lr_mlp})
             else:
                 param_group.append({"params": param, "lr":args.lr})
+    elif mode == "finetune_all":
+        param_group = []
+        for name, param in model.named_parameters():
+            param.requires_grad = False
+            tmp = 1
+            for num in param.shape:
+                tmp *= num
+            if 'ViT' in name or 'swin' in name:
+                param.requires_grad = False
+            elif 'htsat' in name:
+                param.requires_grad = False
+            elif 'adapter_blocks' in name:
+                param.requires_grad = True
+            elif 'CMBS' in name:
+                param.requires_grad = True
+            elif 'mlp_class' in name:
+                param.requires_grad = True
+            elif 'temporal_attn' in name:
+                param.requires_grad = False
+            if 'mlp_class' in name:
+                param_group.append({"params": param, "lr":args.lr_mlp})
+            else:
+                param_group.append({"params": param, "lr":args.lr})
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
 
     return model
