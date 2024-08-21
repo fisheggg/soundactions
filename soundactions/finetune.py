@@ -7,20 +7,13 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
-from torchvision.transforms.v2 import (
-    Compose,
-    RandomHorizontalFlip,
-    RandomPerspective,
-    ElasticTransform,
-    ColorJitter,
-    GaussianBlur,
-    RandomApply,
-)
+from torchvision.transforms.v2 import Compose, GaussianBlur
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
 from dgsct.nets.net_trans import CMBS, MMIL_Net
 from dataloader import SoundActionsDataset
+from transform import VideoColorJitter, VideoRandomHorizontalFlip
 
 
 def cross_valid_finetune(
@@ -53,8 +46,8 @@ def cross_valid_finetune(
     if finetune_mode == "all":
         video_transform = Compose(
             [
-                RandomHorizontalFlip(p=0.5),
-                ColorJitter(brightness=0.3, hue=0.2),
+                VideoRandomHorizontalFlip(p=0.5),
+                VideoRandomHorizontalFlip(brightness=0.3, hue=0.2),
                 GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
             ]
         )
