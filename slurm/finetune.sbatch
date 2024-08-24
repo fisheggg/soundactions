@@ -7,9 +7,17 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --account=ec12
 #SBATCH --partition=accel
-#SBATCH --gpus=1
+#SBATCH --gpus=a100:1
 
 module load Miniconda3/22.11.1-1
-conda activate soundactions
+conda activate /projects/ec12/jinyueg/conda/envs/soundactions
+
+echo "=> Python path:"
+which python
+
+echo "=> Available GPU(s):"
+nvidia-smi -L
+
+
 cd /projects/ec12/jinyueg/SoundActions/soundactions/soundactions
 python finetune.py

@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
-from torchvision.transforms.v2 import Compose, GaussianBlur
+import torchvision.transforms.v2 as TV2
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
@@ -44,11 +44,12 @@ def cross_valid_finetune(
 
     # apply video transform in finetune mode is "all"
     if finetune_mode == "all":
-        video_transform = Compose(
+        video_transform = TV2.Compose(
             [
-                VideoRandomHorizontalFlip(p=0.5),
-                VideoRandomHorizontalFlip(brightness=0.3, hue=0.2),
-                GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+                TV2.RandomHorizontalFlip(p=0.5),
+                TV2.ColorJitter(brightness=0.3, hue=0.2),
+                TV2.ElasticTransform(alpha=30.0, sigma=5.0),
+                TV2.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
             ]
         )
     else:
@@ -92,9 +93,9 @@ def cross_valid_finetune(
         if use_wandb:
             wandb_logger = WandbLogger(
                 project="soundactions",
-                name=f"{exp_name}_{finetune_mode}_{target_label}_{train_modality}_{i}",
+                name=f"{exp_name}_{finetune_mode}_{target_label}_{train_modality}_{valid_modality}_{i}",
                 save_dir=Path(__file__).resolve().parent
-                / f"logs/{exp_name}_{finetune_mode}_{train_modality}_{target_label}",
+                / f"logs/{exp_name}_{finetune_mode}_{target_label}_{train_modality}_{valid_modality}",
             )
         es_cb = pl.callbacks.EarlyStopping(
             monitor="train_loss", patience=10, mode="min"
@@ -195,8 +196,8 @@ class LitDGSCT(pl.LightningModule):
 
 if __name__ == "__main__":
     cross_valid_finetune(
-        exp_name="W00",
-        target_label="Enjoyable",
+        exp_name="V01",
+        target_label="PerceptionType",
         finetune_mode="all",
         batch_size=4,
         train_modality="av",
