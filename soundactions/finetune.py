@@ -47,9 +47,9 @@ def cross_valid_finetune(
         video_transform = TV2.Compose(
             [
                 TV2.RandomHorizontalFlip(p=0.5),
-                TV2.ColorJitter(brightness=0.3, hue=0.2),
-                TV2.ElasticTransform(alpha=30.0, sigma=5.0),
-                TV2.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
+                # TV2.ColorJitter(brightness=0.5, hue=0.3, contrast=0.3, saturation=0.3),
+                # TV2.ElasticTransform(alpha=30.0, sigma=5.0),
+                # TV2.GaussianBlur(kernel_size=5, sigma=(0.1, 2.0)),
             ]
         )
     else:
@@ -126,7 +126,9 @@ class LitDGSCT(pl.LightningModule):
         lr=1e-3,
     ):
         super().__init__()
-        assert mode in ["train", "test", "finetune_cls", "finetune_all"]
+        assert mode in ["train", "test", "finetune", "finetune_cls", "finetune_all"], f"Invalid mode: {mode}"
+        if mode == "finetune":
+            mode = "finetune_cls" # backward compatibility
 
         # load model
         self.model = load_DGSCT(pretrain=pretrain, mode=mode)
@@ -140,8 +142,8 @@ class LitDGSCT(pl.LightningModule):
         self.save_hyperparameters()
         self.loss = torch.nn.CrossEntropyLoss()
 
-    def forward(self, **kwargs):
-        self.model(**kwargs)
+    def forward(self, audio, video):
+        return self.model([audio], video)
 
     def cal_acc(self, pred, label):
         return (pred.argmax(1) == label).float().mean()
@@ -196,12 +198,12 @@ class LitDGSCT(pl.LightningModule):
 
 if __name__ == "__main__":
     cross_valid_finetune(
-        exp_name="V01",
+        exp_name="V08",
         target_label="PerceptionType",
         finetune_mode="all",
         batch_size=4,
         train_modality="av",
-        valid_modality="av",
+        valid_modality="v",
         n_splits=5,
         lr=5e-3,
     )
