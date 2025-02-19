@@ -1,4 +1,5 @@
 import os
+import yaml
 import glob
 
 from tqdm import tqdm
@@ -26,6 +27,17 @@ def soundactions_to_images(soundactions_dir: str, output_dir: str, fps: int = No
         video_name = os.path.basename(video_path).split(".")[0]
         output_path = os.path.join(output_dir, video_name)
         video_to_images(video_path, output_path, fps)
+
+
+def wandb_config_to_pl(config_path: str):
+    with open(config_path, "r") as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    out = {}
+    for k, v in config.items():
+        if "wandb" in k:
+            continue
+        out[k] = v["value"]
+    return out
 
 
 if __name__ == "__main__":
