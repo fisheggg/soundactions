@@ -7,13 +7,13 @@ import pytorch_lightning as pl
 from torch.utils.data import DataLoader, Subset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import seed_everything
-import torchvision.transforms.v2 as TV2
+# import torchvision.transforms.v2 as TV2
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
 from dgsct.nets.net_trans import CMBS, MMIL_Net
-from dataloader import SoundActionsDataset
-from transform import VideoColorJitter, VideoRandomHorizontalFlip
+# from dataloader import SoundActionsDataset
+# from transform import VideoColorJitter, VideoRandomHorizontalFlip
 
 
 def cross_valid_finetune(
@@ -122,6 +122,7 @@ class LitDGSCT(pl.LightningModule):
         pretrain: bool,
         new_cls_head: bool,
         num_classes: int = None,
+        verbose=False,
         mode="train",
         lr=1e-3,
     ):
@@ -131,9 +132,10 @@ class LitDGSCT(pl.LightningModule):
             mode = "finetune_cls" # backward compatibility
 
         # load model
-        self.model = load_DGSCT(pretrain=pretrain, mode=mode)
+        self.model = load_DGSCT(pretrain=pretrain, mode=mode, verbose=verbose)
         if new_cls_head:
-            print(f"=> Init new cls head with {num_classes} classes")
+            if verbose:
+                print(f"=> Init new cls head with {num_classes} classes")
             self.model.CMBS = CMBS(opt=None, num_classes=num_classes)
 
         # set paramters

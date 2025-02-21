@@ -11,7 +11,7 @@ from tqdm import tqdm
 from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 from torchaudio.transforms import Resample
 from torch.utils.data import DataLoader
-from torchvision import tv_tensors
+# from torchvision import tv_tensors
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from sklearn.model_selection import KFold

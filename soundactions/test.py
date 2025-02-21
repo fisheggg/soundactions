@@ -16,6 +16,7 @@ from dgsct.AVE.main_trans import eval
 from dgsct.AVE.dataloader import AVE_dataset
 from inference import LitDGSCT
 from dgsct.base_options import BaseOptions
+from eopma import EnsembleEmbedding, EoPMA
 
 
 def run_eval(
@@ -24,12 +25,13 @@ def run_eval(
     config_path: str,
     task: str,
     inference_mode: str,
+    ensemble_modality: str,
     device: str = "cuda",
     verbose: bool = False,
     **kwargs,
 ):
     """Test soundactions-finetuned ckpt over original DG-SCT tasks"""
-    assert inference_mode in ["finetuned_only", "add_final_embedding"]
+    assert inference_mode in ["finetuned_only", "ensemble_embedding", "eopma"]
     soundactions = LitDGSCT.load_from_checkpoint(
         checkpoint_path=ckpt_path,
         **wandb_config_to_pl(config_path),
@@ -44,12 +46,20 @@ def run_eval(
         # swtich to the original classifier
         model.CMBS = load_DGSCT(pretrain=True, mode="test").CMBS.to(device)
         model.eval()
-    elif inference_mode == "add_final_embedding":
-        model = Ensemble(
-            ensemble_method="final_embedding",
+    elif inference_mode == "ensemble_embedding":
+        model = EnsembleEmbedding(
             finetuned_ckpt_path=ckpt_path,
             finetuned_config_path=config_path,
             beta=kwargs.get("beta"),
+            modality=ensemble_modality,
+            device=device,
+        )
+    elif inference_mode == "eopma":
+        model = EoPMA(
+            finetuned_ckpt_path=ckpt_path,
+            finetuned_config_path=config_path,
+            beta=kwargs.get("beta"),
+            modality=ensemble_modality,
             device=device,
         )
 
@@ -110,9 +120,12 @@ def run_eval(
             print(f"=> Mean accuracy: {mean_acc:.2f}")
         return mean_acc
 
-def eval_all_ensemble_last(
+
+def eval_all(
     ckpt_list: list,
     config_list: list,
+    inference_mode: str,
+    ensemble_modality: str,
     beta_list: list,
     results_save_path: str,
 ):
@@ -127,7 +140,8 @@ def eval_all_ensemble_last(
                     ckpt_path=ckpt,
                     config_path=config,
                     task="AVE",
-                    inference_mode="add_final_embedding",
+                    inference_mode=inference_mode,
+                    ensemble_modality=ensemble_modality,
                     beta=beta,
                 )
                 print(f"=> beta: {beta}, mean_acc: {mean_acc:.2f}")
@@ -136,8 +150,6 @@ def eval_all_ensemble_last(
                 print(f"=> Error: {e}")
     results_df = pd.DataFrame(results, columns=["ckpt", "beta", "mean_acc"])
     results_df.to_csv(results_save_path, index=False)
-
-
 
 
 def wandb_config_to_pl(config_path: str):
@@ -163,13 +175,16 @@ if __name__ == "__main__":
     # )
 
     ckpt_list = glob.glob(
-            "/projects/ec12/jinyueg/SoundActions/soundactions/logs/W04_all_Enjoyable_av_av/soundactions/*/checkpoints/*.ckpt"
-        )
-    eval_all_ensemble_last(
+        "/projects/ec12/jinyueg/SoundActions/soundactions/logs/V06_all_PerceptionType_v_v/soundactions/*/checkpoints/*.ckpt"
+    )
+    eval_all(
         ckpt_list=ckpt_list,
         config_list=[
-            "/projects/ec12/jinyueg/SoundActions/soundactions/logs/W04_all_Enjoyable_av_av/wandb/run-20240825_154204-f0fmtwu5/files/config.yaml"
-        ]*len(ckpt_list),
-        beta_list=list(np.arange(0.0, 0.2, 0.01)),
-        results_save_path="../results/W04_eval_all_ensemble_last.csv",
+            "/projects/ec12/jinyueg/SoundActions/soundactions/logs/V06_all_PerceptionType_v_v/wandb/latest-run/files/config.yaml"
+        ]
+        * len(ckpt_list),
+        inference_mode="eopma",
+        ensemble_modality="v",
+        beta_list=list(np.arange(0.00, 0.04, 0.001)),
+        results_save_path="../results/V06_eopma_v_finebeta.csv",
     )
