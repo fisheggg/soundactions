@@ -1,0 +1,366 @@
+SoundAction No.,Perception type,Material,Environment,Enjoyability
+1,Iterative,"plastic, snow",outdoor,Yes
+2,Sustain,"snow, plastic",outdoor,Unknown
+3,Iterative,"metal, wood",outdoor,No
+4,Impulse,"wood, others",kitchen,Yes
+5,Iterative,"metal, wood",outdoor,No
+6,Impulse,"metal, plastic, fabric, snow, leather",outdoor,Neutral
+7,Impulse,"metal, plastic, rubber",outdoor,Unknown
+8,Impulse,"metal, wood, rubber, fabric",room,No
+9,Unknown,"metal, fabric, plastic",corridor,Yes
+10,Impulse,"wood, plastic",room,Unknown
+11,Impulse,"paper, wood, metal",room,Neutral
+12,Iterative,"liquid, ceramic, metal",corridor,Yes
+13,Impulse,"wood, fabric",corridor,Neutral
+14,Impulse,"plastic, metal, others",corridor,Neutral
+15,Impulse,"plastic, metal, others",indoor,Neutral
+16,Impulse,"metal, plastic, organic",kitchen,Unknown
+17,Impulse,"plastic, metal",corridor,Unknown
+18,Sustain,"snow, metal, plastic, fabric",outdoor,Unknown
+19,Iterative,"wood, plastic",indoor,No
+20,Impulse,"metal, plastic, paper, wood",office,No
+21,Iterative,plastic,indoor,Neutral
+22,Sustain,"metal, liquid, ceramic, stone",bathroom,Yes
+23,Iterative,"plastic, organic",indoor,No
+24,Sustain,"liquid, plastic, paper",office,Neutral
+25,Unknown,"paper, metal, plastic",indoor,Yes
+26,Impulse,"plastic, wood",corridor,No
+27,Impulse,"leather, metal",indoor,Neutral
+28,Impulse,"fabric, rubber, plastic",indoor,Unknown
+29,Impulse,"plastic, liquid",indoor,Neutral
+30,Impulse,"leather, fabric, glass, plastic",indoor,Neutral
+31,Iterative,"plastic, metal",indoor,Neutral
+32,Unknown,"metal, wood, plastic",indoor,Neutral
+33,Impulse,"plastic, metal",indoor,Neutral
+34,Unknown,plastic,indoor,Neutral
+35,Sustain,"metal, plastic, others",hall,Neutral
+36,Sustain,"metal, plastic",corridor,Neutral
+37,Unknown,"snow, wood, fabric, plastic",outdoor,Neutral
+38,Impulse,"metal, plastic, rubber",indoor,Neutral
+39,Sustain,"wood, metal",room,Neutral
+40,Iterative,"plastic, rubber",office,Neutral
+41,Unknown,"metal, plastic",office,Neutral
+42,Impulse,"metal, glass",indoor,Neutral
+43,Impulse,"metal, plastic",outdoor,No
+44,Unknown,"plastic, glass, rubber",indoor,Neutral
+45,Impulse,plastic,indoor,Neutral
+46,Sustain,"ceramic, liquid",bathroom,Neutral
+47,Impulse,"plastic, metal",indoor,Neutral
+48,Iterative,plastic,indoor,Neutral
+49,Sustain,"glass, metal, liquid",kitchen,Yes
+50,Iterative,"metal, wood",indoor,No
+51,Unknown,"metal, snow",outdoor,No
+52,Iterative,"metal, wood, liquide, others",kitchen,Neutral
+53,Sustain,"wood, metal",room,Neutral
+54,Iterative,"metal, liquid, snow, fabric",outdoor,Unknown
+55,Sustain,metal,kitchen,Neutral
+56,Impulse,wood,kitchen,Neutral
+57,Iterative,"wood, metal, fabric",room,Neutral
+58,Sustain,"metal, fabric",room,Neutral
+59,Impulse,"wood, paper",indoor,Neutral
+60,Sustain,plastic,indoor,Neutral
+61,Sustain,"metal, fabric",indoor,Neutral
+62,Impulse,plastic,indoor,Neutral
+63,Impulse,"plastic, paper, others",office,Neutral
+64,Impulse,plastic,room,Neutral
+65,Iterative,"plastic, metal",indoor,No
+66,Sustain,"plastic, metal, electronic",kitchen,Neutral
+67,Impulse,"paper, wood",room,Unknown
+68,Impulse,stone,outdoor,Neutral
+69,Iterative,"stone, rubber, fabric",outdoor,Neutral
+70,Sustain,"wood, metal, others",indoor,Yes
+71,Iterative,"metal, plastic, organic, electronic, others",kitchen,No
+72,Iterative,"liquid, glass, plastic",kitchen,Yes
+73,Impulse,wood,indoor,Unknown
+74,Sustain,"wood, others",indoor,Yes
+75,Iterative,"plastic, rubber, metal",corridor,Neutral
+76,Iterative,"plastic, metal",indoor,Neutral
+77,Impulse,"wood, others",indoor,Yes
+78,Sustain,"metal, ceramic, organic, others",kitchen,Unknown
+79,Iterative,"metal, wood, fabric",indoor,No
+80,Impulse,"plastic, wood",indoor,Neutral
+81,Unknown,paper,office,Neutral
+82,Sustain,"ceramic, metal, organic, liquid",kitchen,No
+83,Iterative,plastic,kitchen,No
+84,Iterative,"plastic, wood, liquid, metal",office,No
+85,Impulse,"plastic, metal, fabric",indoor,Neutral
+86,Iterative,"metal, plastic",indoor,Neutral
+87,Sustain,"metal, stone",office,Neutral
+88,Sustain,"plastic, wood, stone, fabric",indoor,Neutral
+89,Impulse,"glass, metal, liquid",kitchen,Neutral
+90,Iterative,"rubber, wood, plastic",corridor,Neutral
+91,Sustain,wood,indoor,Neutral
+92,Iterative,"plastic, wood",room,Neutral
+93,Iterative,"plastic, organic, wood, others",outdoor,Neutral
+94,Iterative,"metal, wood",indoor,Yes
+95,Impulse,"ceramic, metal",indoor,Neutral
+96,Iterative,skin,indoor,Neutral
+97,Impulse,"glass, skin",indoor,Yes
+98,Sustain,plastic,indoor,No
+99,Unknown,plastic,indoor,Neutral
+100,Iterative,metal,indoor,No
+101,Impulse,plastic,indoor,Neutral
+102,Iterative,plastic,indoor,No
+103,Iterative,"plastic, fabric, metal, glass",room,Neutral
+104,Unknown,fabric,room,Neutral
+105,Unknown,"metal, fabric, glass, plastic, electronic, others",corridor,No
+106,Iterative,"metal, fabric, stone",outdoor,No
+107,Sustain,"plastic, fabric",indoor,No
+108,Iterative,"stone, rubber, fabric",corridor,No
+109,Impulse,"plastic, rubber",indoor,No
+110,Impulse,"metal, wood",indoor,Yes
+111,Iterative,"plastic, metal, electronic",indoor,Neutral
+112,Impulse,"stone, water",outdoor,Yes
+113,Impulse,plastic,indoor,No
+114,Sustain,"metal, ground, fabric, rubber",outdoor,No
+115,Sustain,"stone, plastic, metal",outdoor,Neutral
+116,Iterative,"wood, metal",indoor,No
+117,Iterative,"plastic, fabric, metal",indoor,No
+118,Iterative,"plastic, metal, rubber",room,Neutral
+119,Sustain,"plastic, others",indoor,No
+120,Impulse,"metal, liquid, others",kitchen,Yes
+121,Iterative,"metal, plastic, fabric",outdoor,No
+122,Sustain,"metal, plastic, others",indoor,Neutral
+123,Sustain,"metal, ceramic, liquid",bathroom,Neutral
+124,Unknown,"wood, fabric, skin",indoor,Neutral
+125,Impulse,"liquid, plastic, others",indoor,Neutral
+126,Iterative,"wood, metal, skin, ceramic, electronic",corridor,Yes
+127,Unknown,"glass, metal, rubber",outdoor,Neutral
+128,Impulse,"plastic, rubber, metal, rubber, wood",indoor,No
+129,Iterative,"stone, fabric, rubber, plastic",corridor,Neutral
+130,Iterative,"metal, plastic",indoor,Yes
+131,Iterative,"organic, metal, plastic, others",kitchen,Neutral
+132,Iterative,"fabric, plastic, stone, rubber, wood",hall,Neutral
+133,Impulse,"skin, stone",hall,Neutral
+134,Impulse,"plastic, metal, glass, electronic",indoor,Neutral
+135,Impulse,"metal, others, stone, plastic, fabric",outdoor,No
+136,Impulse,"plastic, others",room,No
+137,Impulse,"organic, others, metal",outdoor,Neutral
+138,Sustain,"wood, paper, organic",kitchen,Neutral
+139,Impulse,"plastic, rubber, wood",indoor,Neutral
+140,Iterative,"fabric, metal, plastic",outdoor,No
+141,Impulse,"metal, plastic, fabric, electronic",outdoor,Neutral
+142,Impulse,"plastic, fabric, metal",room,Unknown
+143,Sustain,plastic,bathroom,No
+144,Unknown,"metal, plastic, fabric, electronic, liquid",bathroom,No
+145,Impulse,"metal, plastic, fabric",bathroom,Neutral
+146,Sustain,"metal, stone, rubber, plastic, wood",corridor,No
+147,Iterative,"plastic, wood, metal, fabric, rubber",room,Neutral
+148,Sustain,"metal, plastic, wood",room,Neutral
+149,Impulse,"metal, plastic",outdoor,Unknown
+150,Impulse,metal,indoor,Unknown
+151,Impulse,"metal, stone",outdoor,Unknown
+152,Sustain,metal,outdoor,Unknown
+153,Iterative,"plastic, electronic",office,Unknown
+154,Iterative,"glass, plastic, wood, ceramic, others",corridor,Neutral
+155,Impulse,plastic,indoor,No
+156,Sustain,"metal, stone",outdoor,No
+157,Impulse,"wood, metal, organic, others",outdoor,Neutral
+158,Iterative,"organic, ceramic, metal, others",kitchen,Neutral
+159,Sustain,"fabric, metal, plastic",indoor,No
+160,Unknown,"electronic, plastic, leather, fabric",room,No
+161,Impulse,"plastic, metal",room,Unknown
+162,Iterative,"metal plastic, fabric, wood",outdoor,Neutral
+163,Iterative,"metal, plastic",outdoor,Unknown
+164,Iterative,"wood, skin, rubber, plastic",corridor,No
+165,Impulse,"wood, others",outdoor,Neutral
+166,Impulse,metal,room,Neutral
+167,Impulse,"metal, skin, others",bathroom,No
+168,Impulse,"wood, paper",kitchen,Neutral
+169,Iterative,"plastic, metal, stone",outdoor,No
+170,Iterative,"plastic, metal",outdoor,Neutral
+171,Impulse,"plastic, liquid, skin",outdoor,Unknown
+172,Iterative,"stone, rubber, plastic",outdoor,Neutral
+173,Impulse,"wood, metal, plastic",outdoor,Neutral
+174,Iterative,"liquid, skin, stone",outdoor,Yes
+175,Impulse,"plastic, rubber, others",room,Yes
+176,Unknown,"plastic, metal, fabric",room,Neutral
+177,Iterative,metal,outdoor,Neutral
+178,Iterative,"plastic, electronic",room,Neutral
+179,Sustain,"rubber, plastic, metal",kitchen,No
+180,Impulse,glass,outdoor,Yes
+181,Unknown,"plastic, electronic, metal",indoor,Yes
+182,Sustain,"plastic, rubber, metal, electronic, fabric",indoor,Yes
+183,Iterative,metal,outdoor,No
+184,Iterative,"rubber, metal, plastic",outdoor,Neutral
+185,Sustain,"electronic, plastic, metal, wood, skin",room,Unknown
+186,Iterative,"electronic, rubber, plastic, metal",room,Neutral
+187,Iterative,"electronic, plastic, metal",room,Neutral
+188,Impulse,"metal, plastic, wood",kitchen,Neutral
+189,Impulse,"plastic, metal",room,Neutral
+190,Iterative,"plastic, glass",office,Neutral
+191,Impulse,"metal, plastic",indoor,Neutral
+192,Impulse,plastic,indoor,Unknown
+193,Sustain,"metal, stone",outdoor,No
+194,Impulse,"plastic, wood",room,Neutral
+195,Impulse,"liquid, wood",outdoor,Yes
+196,Impulse,"plastic, wood, glass, others",kitchen,Neutral
+197,Sustain,"liquid, plastic, wood, rubber, glass, others",kitchen,Neutral
+198,Sustain,"wood, plastic, metal",indoor,Yes
+199,Iterative,"organic, stone, others",outdoor,Neutral
+200,Iterative,plastic,bathroom,Neutral
+201,Sustain,"metal, plastic, wood",outdoor,Yes
+202,Sustain,"plastic, metal, glass",corridor,No
+203,Iterative,"metal, plastic",outdoor,Neutral
+204,Iterative,"ceramic, stone, organic ",kitchen,Neutral
+205,Impulse,"plastic, lliquid, others",outdoor,Neutral
+206,Impulse,wood,outdoor,Neutral
+207,Impulse,"rubber, metal, plastic",outdoor,Neutral
+208,Unknown,"metal, plastic, electronic",car,Neutral
+209,Unknown,"glass, plastic, metal",car,Neutral
+210,Impulse,"plastic, stone",outdoor,Neutral
+211,Impulse,"metal, stone",outdoor,Yes
+212,Impulse,"wood, stone",outdoor,Yes
+213,Impulse,"plastic, rubber, metal, skin",office,Unknown
+214,Sustain,"plastic, liquid, electronic",kitchen,Neutral
+215,Sustain,"metal, wood",room,Neutral
+216,Iterative,"wood, plastic",room,Neutral
+217,Sustain,"metal, plastic",room,Unknown
+218,Impulse,"leather, plastic, wood, others",room,Yes
+219,Iterative,"stone, metal, plastic",outdoor,No
+220,Impulse,"wood, skin",outdoor,Unknown
+221,Sustain,"plastic, glass, electronic",room,Neutral
+222,Impulse,"plastic, glass",room,Neutral
+223,Sustain,"plastic, wood, liquid",outdoor,Neutral
+224,Sustain,"liquid, glass, plastic",kitchen,Yes
+225,Impulse,"metal, plastic",room,Neutral
+226,Impulse,"plastic, stone",outdoor,Unknown
+227,Iterative,"plastic, glass, metal",room,Neutral
+228,Sustain,"plastic, fabric, electronic",corridor,Neutral
+229,Impulse,"metal, fabric",room,Unknown
+230,Impulse,plastic,corridor,Neutral
+231,Iterative,"plastic, rubber",office,Neutral
+232,Iterative,"plastic, liquid, skin",indoor,Neutral
+233,Impulse,"plastic, stone, leather",outdoor,Neutral
+234,Iterative,"wood, skin, metal",indoor,Neutral
+235,Iterative,"metal plastic, stone",corridor,Neutral
+236,Impulse,"metal, plastic, wood",indoor,No
+237,Impulse,"metal, plastic, wood",room,Neutral
+238,Impulse,"plastic, skin",room,Yes
+239,Iterative,"plastic, electronic",room,No
+240,Sustain,"stone, wood",corridor,Neutral
+241,Iterative,"plastic, metal, lectronic",outdoor,No
+242,Unknown,"plastic, stone",corridor,No
+243,Sustain,"glass, plastic, electronic, skin",room,Neutral
+244,Impulse,"paper, stone",corridor,Neutral
+245,Impulse,"plastic, skin",indoor,Unknown
+246,Sustain,"organic, skin, others",kitchen,Neutral
+247,Sustain,"fabric, wood, liquid",indoor,Neutral
+248,Iterative,"wood, paper, skin, others",indoor,Neutral
+249,Iterative,"paper, plastic, rubber,",indoor,Unknown
+250,Sustain,"metal, stone, plastic, fabric, wood",corridor,No
+251,Iterative,"metal, plastic, glass",room,Neutral
+252,Iterative,"metal, plastic, skin",room,Neutral
+253,Sustain,"metal, liquid",kitchen,Neutral
+254,Sustain,"glass, liquid, metal, electronic",kitchen,No
+255,Unknown,"glass, liquid, metal, organic, others",kitchen,Neutral
+256,Sustain,"glass, ceramic, organic, wood, metal, others",kitchen,Neutral
+257,Iterative,"glass, ceramic, organic, plastic, skin,others",kitchen,Neutral
+258,Iterative,"paper, glass, plastic, electronic, metal",office,No
+259,Iterative,"fabric, skin, plastic, metal, electronic",indoor,Unknown
+260,Iterative,"rubber, stone, glass, plastic",corridor,Neutral
+261,Impulse,"wood, plastic",room,Neutral
+262,Sustain,"fabric, metal, skin, plastic",room,Neutral
+263,Impulse,"paper, plastic",bathroom,Neutral
+264,Unknown,metal,indoor,Neutral
+265,Iterative,"organic, wood, metal, others",kitchen,Unknown
+266,Impulse,"plastic, skin",indoor,Neutral
+267,Iterative,"metal, plastic, electronic",office,No
+268,Iterative,"organic, glass, plastic, electronic",kitchen,Neutral
+269,Iterative,"organic, metal, others",kitchen,Neutral
+270,Sustain,"fabric, skin",room,No
+271,Sustain,"paper, wood, skin",indoor,Yes
+272,Iterative,"metal, glass, plastic, others",room,Neutral
+273,Iterative,"liquid, metal, plastic, fabric, ",kitchen,Unknown
+274,Impulse,"metal, plastic, paper",office,Neutral
+275,Iterative,"metal, organic, plastic, glass, electronic",kitchen,No
+276,Iterative,"metal, paper, plastic, electronic",office,No
+277,Sustain,"metal, plastic, wood, others",indoor,Unknown
+278,Impulse,"paper, plastic",indoor,Neutral
+279,Impulse,"organic, wood",kitchen,Yes
+280,Iterative,"wood, organic, fabric, metal",outdoor,No
+281,Impulse,paper,indoor,Yes
+282,Impulse,"organic, wood",kitchen,Yes
+283,Impulse,"glass, stone",outdoor,Yes
+284,Sustain,"plastic, skin",indoor,Yes
+285,Sustain,"organic, plastic",indoor,Neutral
+286,Impulse,"plastic, wood",room,Unknown
+287,Impulse,"glass, metal, others",indoor,Yes
+288,Impulse,"organic, wood",kitchen,Neutral
+289,Impulse,"wood, skin",office,Yes
+290,Iterative,"plastic, wood",indoor,Yes
+291,Iterative,"wood, metal, plastic",indoor,Unknown
+292,Iterative,"organic, wood",indoor,Neutral
+293,Impulse,"plastic, wood, organic, others",outdoor,Neutral
+294,Sustain,"paper, wood",indoor,Neutral
+295,Sustain,"plastic, rubber, wood",office,Neutral
+296,Iterative,"plastic, metal, electronic",indoor,Unknown
+297,Sustain,"plastic, metal, electronic",indoor,No
+298,Sustain,"plastic, metal, electronic",office,Unknown
+299,Impulse,"plastic, metal, rubber, electronic",indoor,Unknown
+300,Sustain,"metal, wood",indoor,Yes
+301,Iterative,"plastic, electronic",bathroom,No
+302,Impulse,plastic,indoor,Neutral
+303,Impulse,plastic,indoor,Neutral
+304,Iterative,"organic, metal",kitchen,No
+305,Sustain,"plastic, metal",hall,Neutral
+306,Impulse,"plastic, metal",indoor,Neutral
+307,Iterative,"ceramic, organic, plastic",outdoor,Unknown
+308,Iterative,"liquid, glass, metal, wood, skin",indoor,No
+309,Iterative,"glass, metal, plastic",indoor,Neutral
+310,Iterative,"plastic, stone",corridor,Neutral
+311,Iterative,"wood, metal",indoor,Neutral
+312,Impulse,plastic,indoor,Neutral
+313,Iterative,plastic,indoor,Neutral
+314,Iterative,"metal, stone",hall,No
+315,Iterative,"plastic, wood, metal",indoor,Yes
+316,Iterative,"fabric, leather, others",indoor,Neutral
+317,Impulse,"ceramic, wood",kitchen,Neutral
+318,Unknown,"plastic, metal, electronic",corridor,Yes
+319,Sustain,"ceramic, organic, metal",kitchen,Neutral
+320,Iterative,"metal, stone, plastic",indoor,No
+321,Impulse,"rubber, plastic, liquid",bathroom,Neutral
+322,Impulse,others,indoor,Neutral
+323,Sustain,"leather, stone, fabric",indoor,Neutral
+324,Iterative,"liquid, organic, plastic",kitchen,Unknown
+325,Iterative,"leather, wood, fabric",indoor,Yes
+326,Impulse,"leather, wood, skin, fabric",indoor,Yes
+327,Impulse,"metal, plastic",indoor,Unknown
+328,Unknown,metal,hall,Neutral
+329,Iterative,"metal, plastic",office,Yes
+330,Iterative,"metal, plastic",indoor,Neutral
+331,Iterative,"plastic, wood",office,Neutral
+332,Unknown,"Metal, fabric, plastic",office,Neutral
+333,Sustain,"metal, skin",indoor,Neutral
+334,Iterative,"wood, fabric",room,Neutral
+335,Sustain,"metal, plastic, electronic",indoor,Neutral
+336,Impulse,"plastic, paper",office,Neutral
+337,Iterative,"plastic, liquid, others",kitchen,Neutral
+338,Sustain,"plastic, metal, stone, electronic",room,No
+339,Unknown,"fabric, plastic",indoor,Neutral
+340,Impulse,"plastic, wood, metal",hall,Neutral
+341,Sustain,"plastic, wood, electronic",corridor,No
+342,Sustain,"plastic, metal, glass, wood, fabric",corridor,Neutral
+343,Iterative,"metal, glass, wood",kitchen,Neutral
+344,Unknown,"organic, glass, fabric",indoor,Neutral
+345,Sustain,"metal, skin, organic",indoor,No
+346,Sustain,"paper, fabric",indoor,Neutral
+347,Unknown,"metal, plastic, rubber, wood",indoor,Neutral
+348,Iterative,"metal, wood",indoor,No
+349,Iterative,"metal, wood",indoor,Neutral
+350,Unknown,"wood, metal, rubber, electronic",indoor,No
+351,Unknown,"metal, wood, glass",kitchen,Neutral
+352,Sustain,"metal, wood, glass, others",indoor,Neutral
+353,Iterative,"metal, plastic, electronic",indoor,Neutral
+354,Iterative,"plastic, paper, metal",office,Neutral
+355,Sustain,"wood, metal, plastic, leather, fabric, skin",room,Neutral
+356,Iterative,"fabric, skin, metal, organic",room,Neutral
+357,Impulse,"skin, liquid",indoor,Yes
+358,Sustain,"metal, plastic, skin",indoor,Neutral
+359,Sustain,"plastic, others",outdoor,Neutral
+360,Unknown,"skin, liquid",room,Yes
+361,Impulse,"plastic, metal",room,Neutral
+362,Iterative,"plastic, metal, leather",outdoor,Neutral
+363,Iterative,"metal, wood, plastic",room,Neutral
+364,Iterative,"wood, metal, plastic, others",outdoor,Neutral
+365,Impulse,"wood, glass, plastic",indoor,Yes
