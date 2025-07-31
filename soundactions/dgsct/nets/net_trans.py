@@ -244,15 +244,15 @@ class TemporalAttention(nn.Module):
     
     
 class CMBS(nn.Module):
-    def __init__(self, opt, num_classes: int = 28):
+    def __init__(self, opt, num_classes: int = 28, dropout=0):
         super(CMBS, self).__init__()
         self.opt = opt
         self.num_classes = num_classes
         self.beta = 0.4
         self.d_model = 256
 
-        self.AVInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=0.2)
-        self.VAInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=0.2)
+        self.AVInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=dropout)
+        self.VAInter = AudioVideoInter(self.d_model, n_head=4, head_dropout=dropout)
         self.localize_module = SupvLocalizeModule(self.d_model, self.num_classes)
         self.video_norm = nn.LayerNorm(self.d_model)
         self.audio_norm = nn.LayerNorm(self.d_model)
@@ -669,7 +669,7 @@ class VisualAdapter(nn.Module):
 
 class MMIL_Net(nn.Module):
 
-	def __init__(self, opt):
+	def __init__(self, opt, dropout=0):
 		super(MMIL_Net, self).__init__()
 
 		# self.AST = ASTModel(label_dim=512, fstride=10, tstride=10, input_fdim=128,
@@ -679,7 +679,7 @@ class MMIL_Net(nn.Module):
 
 
 		self.opt = opt
-		self.CMBS = CMBS(self.opt)
+		self.CMBS = CMBS(self.opt) # do not add dropout here, since the CMBS head is replaced outside
 		self.temporal_attn = TemporalAttention()
 
 
@@ -729,6 +729,7 @@ class MMIL_Net(nn.Module):
 			patch_stride=esc_config.htsat_stride,
 			num_heads=esc_config.htsat_num_head
 		)
+		self.dropout = dropout
         
 		# checkpoint_path = os.path.join(esc_config.checkpoint_path, esc_config.checkpoint)
 		checkpoint_path = os.path.join("/projects/ec12/jinyueg/SoundActions/soundactions/checkpoints/dg-sct/backbone/AudioSet/HTSAT_AudioSet_Saved_1.ckpt")
@@ -887,9 +888,11 @@ class MMIL_Net(nn.Module):
 
 					f_v = f_v + blk.drop_path1(blk.norm1(blk._attn(f_v)))
 					f_v = f_v + f_v_res.squeeze(-1).permute(0,2,1)
+					f_v = torch.nn.functional.dropout(f_v, p=self.dropout)
 
 					f_a, _ = blk_a(f_a)
 					f_a = f_a + f_a_res.squeeze(-1).permute(0,2,1)
+					f_a = torch.nn.functional.dropout(f_a, p=self.dropout)
 				
 					f_a_res, f_a_spatial_att_maps = self.audio_adapter_blocks_p2[idx_layer](f_a.permute(0,2,1).unsqueeze(-1), f_v.permute(0,2,1).unsqueeze(-1))
 					f_v_res, f_v_spatial_att_maps = self.vis_adapter_blocks_p2[idx_layer]( f_v.permute(0,2,1).unsqueeze(-1), f_a.permute(0,2,1).unsqueeze(-1))

@@ -26,22 +26,23 @@ def run_eval(
     task: str,
     inference_mode: str,
     ensemble_modality: str,
+    second_dgsct_ckpt_path: str = None,
     device: str = "cuda",
     verbose: bool = False,
     **kwargs,
 ):
     """Test soundactions-finetuned ckpt over original DG-SCT tasks"""
     assert inference_mode in ["finetuned_only", "ensemble_embedding", "eopma"]
-    soundactions = LitDGSCT.load_from_checkpoint(
-        checkpoint_path=ckpt_path,
-        **wandb_config_to_pl(config_path),
-    )
 
     if verbose:
         print(f"=> Loaded checkpoint from {ckpt_path}")
         print(f"=> Inference mode: {inference_mode}")
 
     if inference_mode == "finetuned_only":
+        soundactions = LitDGSCT.load_from_checkpoint(
+            checkpoint_path=ckpt_path,
+            **wandb_config_to_pl(config_path).pop("verbose"),
+        )
         model = soundactions.model.to(device)
         # swtich to the original classifier
         model.CMBS = load_DGSCT(pretrain=True, mode="test").CMBS.to(device)
@@ -58,6 +59,7 @@ def run_eval(
         model = EoPMA(
             finetuned_ckpt_path=ckpt_path,
             finetuned_config_path=config_path,
+            second_dgsct_ckpt_path=second_dgsct_ckpt_path,
             beta=kwargs.get("beta"),
             modality=ensemble_modality,
             device=device,
@@ -112,6 +114,7 @@ def run_eval(
             print("=" * 20)
             print(f"=> Task: {task}")
             print(f"=> Checkpoint: {ckpt_path}")
+            print(f"=> Ensemble modality: {ensemble_modality}")
             if kwargs:
                 print(
                     "=> Hyperparameters: "
@@ -131,8 +134,15 @@ def eval_all(
 ):
     """Evaluate all ensemble models and save results"""
     results = []
+    print("=> Running evaluation on AVE task")
+    print(f"=> checkpoints: {ckpt_list}")
+    print(f"=> inference mode: {inference_mode}")
+    print(f"=> ensemble modality: {ensemble_modality}")
 
+    cnt = 0
     for ckpt, config in tqdm(zip(ckpt_list, config_list)):
+        cnt += 1
+        print(f"=> loading checkpoint {cnt}/{len(ckpt_list)}:{ckpt}")
         for beta in beta_list:
             try:
                 mean_acc = run_eval(
@@ -143,6 +153,7 @@ def eval_all(
                     inference_mode=inference_mode,
                     ensemble_modality=ensemble_modality,
                     beta=beta,
+                    device="cuda",
                 )
                 print(f"=> beta: {beta}, mean_acc: {mean_acc:.2f}")
                 results.append((ckpt, beta, mean_acc))
@@ -164,6 +175,7 @@ def wandb_config_to_pl(config_path: str):
 
 
 if __name__ == "__main__":
+    #########################################################
     # run_eval(
     #     dgsct_dir="/projects/ec12/jinyueg/DG-SCT",
     #     ckpt_path='/projects/ec12/jinyueg/SoundActions/soundactions/logs/V04_all_PerceptionType_av_av/soundactions/0407syid/checkpoints/epoch=12-step=962.ckpt',
@@ -174,17 +186,32 @@ if __name__ == "__main__":
     #     verbose=True,
     # )
 
+    #########################################################
     ckpt_list = glob.glob(
-        "/projects/ec12/jinyueg/SoundActions/soundactions/logs/V06_all_PerceptionType_v_v/soundactions/*/checkpoints/*.ckpt"
+        "/projects/ec12/jinyueg/SoundActions/soundactions/logs/Y3_all_Enjoyable_av_av/soundactions/*/checkpoints/*.ckpt"
     )
     eval_all(
         ckpt_list=ckpt_list,
         config_list=[
-            "/projects/ec12/jinyueg/SoundActions/soundactions/logs/V06_all_PerceptionType_v_v/wandb/latest-run/files/config.yaml"
+            "/projects/ec12/jinyueg/SoundActions/soundactions/logs/Y3_all_Enjoyable_av_av/wandb/latest-run/files/config.yaml"
         ]
         * len(ckpt_list),
         inference_mode="eopma",
-        ensemble_modality="v",
+        ensemble_modality="av",
         beta_list=list(np.arange(0.00, 0.04, 0.001)),
-        results_save_path="../results/V06_eopma_v_finebeta.csv",
+        results_save_path="../results/Y3_eopma_av_finebeta.csv",
     )
+
+    #########################################################
+    # for beta in np.arange(0.00, 1.0, 0.001):
+    #     run_eval(
+    #         dgsct_dir="/projects/ec12/jinyueg/DG-SCT",
+    #         ckpt_path=None,
+    #         config_path=None,
+    #         second_dgsct_ckpt_path="/projects/ec12/jinyueg/DG-SCT/DG-SCT/AVE/models/best_81.16.pt",
+    #         task="AVE",
+    #         inference_mode="eopma",
+    #         ensemble_modality="av",
+    #         beta=beta,
+    #         verbose=True,
+    #     )
