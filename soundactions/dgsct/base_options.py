@@ -57,7 +57,7 @@ class BaseOptions():
 		self.parser.add_argument('--log-interval', type=int, default=50, metavar='N',
 							help='how many batches to wait before logging training status')
 		self.parser.add_argument(
-			"--model_save_dir", type=str, default='models/', help="model save dir")
+			"--model_save_dir", type=str, default='checkpoints/', help="model save dir")
 		self.parser.add_argument(
 			"--checkpoint", type=str, default='best',
 			help="save model name")
@@ -185,6 +185,9 @@ class BaseOptions():
 		### SoundActions options  ###
 		#############################
 		self.parser.add_argument('--num_class', type=int, default=28, help='number of classes')
+		self.parser.add_argument('--modality', type=str, help='modality')
+		self.parser.add_argument('--finetuned_ckpt_path', type=str)
+		self.parser.add_argument('--finetuned_config_path', type=str)
 
 	def parse(self):
 		if not self.initialized:

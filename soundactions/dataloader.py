@@ -1,5 +1,6 @@
 import os
 import glob
+from importlib.metadata import version
 
 import numpy as np
 import pandas as pd
@@ -11,10 +12,14 @@ from tqdm import tqdm
 from torchvision.transforms import Compose, Normalize, Resize, ToTensor
 from torchaudio.transforms import Resample
 from torch.utils.data import DataLoader
-from torchvision import tv_tensors
 from PIL import Image
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from sklearn.model_selection import KFold
+if version("torch") >= "2.0":
+    from torchvision import tv_tensors
+
+SOUNDACTIONS_MEAN = (0.31087867, 0.26708432, 0.23720401)
+SOUNDACTIONS_STD = (0.25809416, 0.23249306, 0.22028674)
 
 
 class SoundActionsDataset(torch.utils.data.Dataset):
@@ -95,12 +100,12 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         }
         self._verify_labels()
 
-        self.video_standardize = Compose(
-            [
-                # Resize([192, 192], interpolation=Image.BICUBIC),
-                Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
-            ]
-        )
+        # self.video_standardize = Compose(
+        #     [
+        #         # Resize([192, 192], interpolation=Image.BICUBIC),
+        #         Normalize(IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD),
+        #     ]
+        # )
         self.audio_standardize = Compose(
             [
                 Resample(orig_freq=orig_audio_fs, new_freq=32000),
@@ -144,8 +149,6 @@ class SoundActionsDataset(torch.utils.data.Dataset):
             audio_path = self.audio_paths[idx]
             if "v" in self.modality:
                 data["video"] = self._load_video(video_path, pad_mode=self.pad_mode)
-                if self.video_transform is not None:
-                    data["video"] = self.video_transform(data["video"])
             else:
                 data["video"] = torch.zeros(self.video_shape)
             if "a" in self.modality:
@@ -157,8 +160,6 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         elif self.load_mode == "preload":
             if "v" in self.modality:
                 data["video"] = self.videos[idx]
-                if self.video_transform is not None:
-                    data["video"] = self.video_transform(data["video"])
             else:
                 data["video"] = torch.zeros(self.video_shape)
             if "a" in self.modality:
@@ -196,23 +197,45 @@ class SoundActionsDataset(torch.utils.data.Dataset):
         sample_frames = np.arange(num_frames) * original_fps / load_fps + 1
 
         total_img = []
+        # load frames
         for frame_idx in sample_frames.astype(int):
             if frame_idx <= n_frames:
                 img_path = os.path.join(video_frames_dir, f"{frame_idx:04}.png")
                 tmp_img = torchvision.io.read_image(img_path).to(torch.float32) / 255.0
-                tmp_img = self.video_standardize(tmp_img)
-            elif pad_mode == "zero":
-                tmp_img = torch.zeros_like(total_img[-1])
-            elif pad_mode == "repeat":
-                tmp_img = total_img[-1]
-            elif pad_mode == "ninf":
-                tmp_img = torch.full_like(total_img[-1], -torch.inf)
-            else:
-                raise ValueError(f"Invalid pad_mode: {pad_mode}")
-            total_img.append(tmp_img)
-        total_img = torch.stack(total_img)
+                total_img.append(tmp_img)
+        out_video = tv_tensors.Video(torch.stack(total_img))
+        if self.video_transform is not None:
+            out_video = self.video_transform(out_video)
 
-        return tv_tensors.Video(total_img)
+        if out_video.shape[0] < num_frames:
+            # pad frames
+            total_img = []
+            for frame_idx in sample_frames.astype(int):
+                if frame_idx <= n_frames:
+                    tmp_img = torch.zeros_like(out_video[0])
+                elif pad_mode == "zero":
+                    tmp_img = torch.zeros_like(out_video[0])
+                elif pad_mode == "repeat":
+                    tmp_img = out_video[-1]
+                elif pad_mode == "ninf":
+                    tmp_img = torch.full_like(out_video[0], -torch.inf)
+                else:
+                    raise ValueError(f"Invalid pad_mode: {pad_mode}")
+                total_img.append(tmp_img)
+            out_video_pad = tv_tensors.Video(torch.stack(total_img))
+
+            # add padding frames to the end of the video
+            out_video = tv_tensors.Video(
+                torch.concat(
+                    [
+                        out_video[: out_video.shape[0]],
+                        out_video_pad[out_video.shape[0] :],
+                    ],
+                    dim=0,
+                )
+            )
+
+        return out_video
 
     def _load_audio(self, audio_path, pad_mode, slice_length=32000, num_slices=10):
         assert pad_mode in ["repeat", "zero", "ninf"]
@@ -309,17 +332,46 @@ def get_dataset_stats():
     # TODO: summarize labels
 
 
-if __name__ == "__main__":
+def get_img_stats():
     dataset = SoundActionsDataset()
-    # # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
+    means = np.zeros((365, 3))
+    stds = np.zeros((365, 3))
+    idx = 0
+    for sample in tqdm(dataloader):
+        video = sample["video"]
+        means[idx] = video.mean(dim=(0, 1, 3, 4))
+        stds[idx] = video.std(dim=(0, 1, 3, 4))
+        idx += 1
+
+    mean_final = means.mean(axis=0)
+    std_final = stds.mean(axis=0)
+    print(f"mean final: {mean_final}, std final: {std_final}")
+
+
+if __name__ == "__main__":
+    #########################################################
+    dataset = SoundActionsDataset()
+    # dataset = SoundActionsDataset("train", load_mode="preload", size=10)
     print(len(dataset))
     sample = dataset[0]
     print(
-        f'video shape: {sample["video"].shape}, video type: {type(sample["video"])}, video dtype: {sample["video"].dtype} video min: {sample["video"].min()}, video max: {sample["video"].max()}'
+        f"video shape: {sample['video'].shape}, video type: {type(sample['video'])}, video dtype: {sample['video'].dtype} video min: {sample['video'].min()}, video max: {sample['video'].max()}"
     )
     print(
-        f'audio shape: {sample["audio"].shape}, audio type: {sample["audio"].dtype}, audio min: {sample["audio"].min()}, audio max: {sample["audio"].max()}'
+        f"audio shape: {sample['audio'].shape}, audio type: {sample['audio'].dtype}, audio min: {sample['audio'].min()}, audio max: {sample['audio'].max()}"
     )
     print(sample["label"])
 
+    #########################################################
     # get_dataset_stats()
+
+    #########################################################
+    # get_img_stats()
+
+    #########################################################
+    # soundactions = SoundActionsDataset(
+    #     load_mode="online", modality="a"
+    # )
+    # splits = soundactions.gen_crossvalid_idx(label="Enjoyable", n_splits=3)
+    # print(splits)

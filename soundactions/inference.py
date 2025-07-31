@@ -6,13 +6,13 @@ from tqdm import tqdm
 from pathlib import Path
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-import scienceplots
+# import scienceplots
 
-plt.style.use(["science", "no-latex"])
+# plt.style.use(["science", "no-latex"])
 
 sys.path.append(str(Path(__file__).resolve().parent))
 from dgsct import load_DGSCT
-from dataloader import SoundActionsDataset
+# from dataloader import SoundActionsDataset
 from finetune import LitDGSCT
 from inference_config import embeddings_config
 

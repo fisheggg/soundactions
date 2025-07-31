@@ -6,3 +6,6 @@ logs/
 *.log
 *.out
 *.png
+*.ckpt
+*.pt
+results/
